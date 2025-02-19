@@ -47,7 +47,7 @@ function Crew:initialize(name,ship)
     health=100-10*love.math.random(),
     food=10+50*love.math.random(),
     o2=120,
-    waste=1,
+    waste=1+10*love.math.random(),
     rest=100,
     stress=10,
     }
@@ -74,15 +74,18 @@ function Crew:initialize(name,ship)
   self.current_job = nil
   self.current_action = Action(self,nil)
   self.action_stack = {}
+  self.job_stack = {}
 
-  self.claim_job = nil
+  self.job_flags = {}
+
   self.claim_device = nil
 end
 
 function Crew:__tostring()
-  return string.format("<%s@%0.01f,%0.01f|o%0.01f,h%0.01f,f%0.01f,r%0.01f,s%0.01f,w%0.01f|%s>", self.name,
+  return string.format("<%s@%0.01f,%0.01f|o%0.01f,h%0.01f,f%0.01f,r%0.01f,s%0.01f,w%0.01f{f%.01f}%s>", self.name,
     self.location.x, self.location.y,
     self.level.o2, self.level.health, self.level.food, self.level.rest, self.level.stress, self.level.waste,
+    self.inventory.food,
     (self.current_action or '-')
     )
 end
@@ -101,12 +104,18 @@ function Crew:slow_update(dt)
     print(self,"medical-1")
   elseif self.level.health < 10 then
     print(self,"medical-2")
-  elseif self.level.food < 10 then
-    print(self,"food-1")
-  elseif self.level.food < 1 then
-    print(self,"food-2")
-  elseif self.level.waste > 10 then
-    print(self,"waste-1")
+  elseif self.level.food < 10  and not self.job_flags.EatJob then
+    print("Eat-10")
+    self.job_stack[#self.job_stack+1] = EatJob(1.0)
+    self.job_flags.EatJob = true
+  elseif self.level.food < 1  and not self.job_flags.EatJob then
+    print("Eat-1")
+    self.job_stack[#self.job_stack+1] = EatJob(5.0)
+    self.job_flags.EatJob = true
+  elseif self.level.waste > 10 and not self.job_flags.WasteJob then
+    print("Waste")
+    self.job_stack[#self.job_stack+1] = WasteJob(1.0)
+    self.job_flags.WasteJob = true
   elseif self.level.rest < 10 then
     print(self,"rest-1")
   elseif self.level.stress > 100 then
@@ -114,8 +123,15 @@ function Crew:slow_update(dt)
   end
 end
 
+function Crew:claim_job(j)
+  j:claim(self)
+  self.action_stack = j:actions()
+end
+
 -- TODO: should look at global job queue, etc.
 function Crew:new_action()
+  self.current_action = nil
+
   if #self.action_stack>0 then
     self.current_action = self.action_stack[#self.action_stack]
     self.action_stack[#self.action_stack] = nil
@@ -123,10 +139,19 @@ function Crew:new_action()
     return
   end
 
+  if #self.job_stack > 0 then
+    local j = self.job_stack[#self.job_stack]
+    self.job_stack[#self.job_stack] = nil
+    self.job_flags[j.class.name] = nil
+    self:claim_job(j)
+    return
+  end
+
   if #the_jobs > 0 then
-    local j = the_jobs[1]
+    local j = the_jobs[#the_jobs]
     if j:check_skills(self) then
-      self.current_action:start()
+      the_jobs[#the_jobs] = nil
+      self:claim_job(j)
       return
     end
   end
@@ -170,6 +195,7 @@ function Crew:update(dt)
   else
     local res = self.current_action:execute(dt)
     if res ~= 'in-progress' then
+      self.current_action:finish()
       self:new_action()
     end
   end

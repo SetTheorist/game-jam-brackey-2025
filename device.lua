@@ -21,7 +21,7 @@ function Device:initialize(name,char,ship,cell,inputs,outputs,decay,args)
     }
   self.manned = false
   self.activated = false
-  self.activation_time = 2.0 --default
+  self.activation_time = 5.0 --default
   self.activation_elapsed = 0.0
   self.claim = nil
   self.repair_job = nil
@@ -32,19 +32,18 @@ end
 function Device:start_operate(agent)
   if self.claim~=agent then
     print("ERROR: Device:start_operate() but self.claim~=agent",self,agent)
-    return
   end
   self.activation_elapsed = 0.0
 end
 function Device:operate(agent,dt)
   if self.claim~=agent then
     print("ERROR: Device:operate() but self.claim~=agent",self,agent)
-    return
   end
   -- TODO: skill
   self.activation_elapsed = self.activation_elapsed + dt
   if self.activation_elapsed >= self.activation_time then
-    self:on_success(agent)
+    self:on_completion(agent)
+    self:stop_operate(agent)
     return 'done'
   else
     return 'in-progress'
@@ -53,15 +52,10 @@ end
 function Device:stop_operate(agent)
   if self.claim~=agent then
     print("ERROR: Device:stop_operate() but self.claim~=agent",self,agent)
-    return
   end
   self.activation_elapsed = 0.0
 end
-function Device:on_success(agent)
-end
-function Device:on_abort(agent)
-end
-function Device:on_failure(agent)
+function Device:on_completion(agent)
 end
 
 function Device:__tostring()
@@ -71,8 +65,8 @@ end
 
 function Device:slow_update(dt)
   local scale = 1.0
-  -- TODO: greater decay for manned/activated devices when being used
-  if self.manned or self.activated then scale = 1/8 end
+  -- TODO: greater decay for manned/activated devices when being used, less when idle
+  --if self.manned or self.activated then scale = 1/8 end
   self.health.electronic = math.max(0, self.health.electronic - dt*self.decay.electronic*scale)
   self.health.mechanical = math.max(0, self.health.mechanical - dt*self.decay.mechanical*scale)
   self.health.quantum = math.max(0, self.health.quantum - dt*self.decay.quantum*scale)
@@ -160,19 +154,41 @@ Toilet = class("Toilet", Device)
 function Toilet:initialize(ship,cell)
   self.class.super.initialize(self,"Toilet",'t',ship,cell,{},{}, {2,16,1},{activated=true})
 end
+function Toilet:operate(agent,dt)
+  local res = self.class.super.operate(self,agent,dt)
+  local t = math.min(dt,agent.level.waste)
+  agent.level.waste = agent.level.waste - t
+  self.ship.level.waste:add(t)
+  return res
+end
 ----------
 Bed = class("Bed", Device)
 function Bed:initialize(ship,cell)
   self.class.super.initialize(self,"Bed",'b',ship,cell,{},{}, {1/8,1,1/256},{activated=true})
 end
 ----------
+Table = class("Table", Device)
+function Table:initialize(ship,cell)
+  self.class.super.initialize(self,"Table",'z',ship,cell,{},{}, {1/256,1/512,1/1024},{activated=true})
+end
+function Table:operate(agent,dt)
+  local res = self.class.super.operate(self,agent,dt)
+  local t = math.min(dt,agent.inventory.food)
+  agent.inventory.food = agent.inventory.food - t
+  agent.level.food = agent.level.food + t
+  return res
+end
+----------
 NutrientDispenser = class("NutrientDispenser", Device)
 function NutrientDispenser:initialize(ship,cell)
   self.class.super.initialize(self,"NutrientDispenser",'f',ship,cell,{},{}, {4,8,1},{activated=true})
 end
-function NutrientDispenser:on_success(agent)
-  local f = self.ship.level.food.sub(1)
-  agent.inventory.food = agent.inventory.food + f
+function NutrientDispenser:operate(agent,dt)
+  local res = self.class.super.operate(self,agent,dt)
+  local t = math.min(dt,self.ship.level.food.value)
+  agent.inventory.food = agent.inventory.food + t
+  self.ship.level.food:sub(t)
+  return res
 end
 ----------
 MedicalBay = class("MedicalBay", Device)
@@ -237,6 +253,7 @@ DEVICES = {
   t=Toilet,
   W=WasteReclamation,
   w=WeaponSystem,
+  z=Table,
 }
 
 

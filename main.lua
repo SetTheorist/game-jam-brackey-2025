@@ -25,6 +25,9 @@ CREW_1_IDLE_IMAGE = nil
 CREW_1_WALK_IMAGE = nil
 CREW_1_WORK_IMAGE = nil
 
+--CONSOLE_IMAGE = nil
+--CONSOLE_ANIM = nil
+
 --------------------------------------------------------------------------------
 
 -- compacts all entries 1..n removing nils, returns count of non-nil entries
@@ -54,10 +57,13 @@ function love.load()
   CREW_1_WALK_IMAGE = love.graphics.newImage(string.format('art/crew-1-walk.png'))
   CREW_1_WORK_IMAGE = love.graphics.newImage(string.format('art/crew-1-work.png'))
 
+  --CONSOLE_IMAGE = love.graphics.newImage(string.format('art/console.png'))
+  --CONSOLE_ANIM = Anim(3,CONSOLE_IMAGE,4,24,24,0,0,0)
+
   the_ship = Ship(MAP)
   for i,n in ipairs({'pat','chris','terry','dana','francis','jean','jo','jordan','cameron','casey','kelly','ollie'}) do
     the_crew[#the_crew+1] = Crew(n,the_ship)
-    if i==2 then break end
+    if i==5 then break end
   end
 
   FONT_1 = love.graphics.newFont('font/FreeSans.ttf',20)
@@ -74,14 +80,9 @@ function love.keypressed(key, scancode, isrepeat)
     collectgarbage('collect')
   end
 
-  if scancode=='r' then
-    local dev = the_ship:locate_device('MedicalBay',0,0,true)
-    if dev then
-      local ag = the_crew[1]
-      local j = RepairJob(1.0,{},dev)
-      j:claim(ag)
-      ag.current_action = nil
-      ag.action_stack = j:actions()
+  if scancode=='w' then
+    for k,v in ipairs(the_jobs) do
+      print(k,v)
     end
   end
 end
@@ -107,6 +108,8 @@ function love.update(dt)
   else
     collectgarbage('step')
   end
+
+  --CONSOLE_ANIM:update(dt)
 end
 
 ----------------------------------------
@@ -115,6 +118,13 @@ function love.slow_game_tick(dt)
     c:slow_update(dt)
   end
   the_ship:slow_update(dt)
+
+  for _,d in ipairs(the_ship.devices) do
+    if d.total_health < 0.5 and not d.repair_job then
+      the_jobs[#the_jobs+1] = RepairJob(3.0,{},d)
+      print("Repair", d)
+    end
+  end
 end
 
 function love.game_tick(dt)
@@ -148,6 +158,10 @@ function love.draw()
   for i,c in ipairs(the_crew) do
     c:draw()
   end
+  --CONSOLE_ANIM.x = 5*24-12
+  --CONSOLE_ANIM.y = 5*24-12
+  --CONSOLE_ANIM.rotation = 0
+  --CONSOLE_ANIM:draw(dt)
   love.graphics.pop()
 
   love.graphics.setColor(1,0.5,1,1)

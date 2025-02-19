@@ -12,8 +12,10 @@ function Job:initialize(name,priority,min_skills,args)
   self.device = nil
   self.owner = nil
   self.on_failure = 'drop'
-  for k,v in pairs(args) do
-    self[k] = v
+  if args then
+    for k,v in pairs(args) do
+      self[k] = v
+    end
   end
 end
 
@@ -39,7 +41,6 @@ end
 function Job:claim(agent)
   if self.owner~=nil and self.owner~=agent then
     print("ERROR: Attempt to claim already-owned job", self, agent)
-    return false
   end
   self.owner = agent
   agent.current_job = self
@@ -70,12 +71,51 @@ end
 
 ----------
 EatJob = class("EatJob", Job)
+function EatJob:initialize(priority)
+  self.class.super.initialize(self,'eat',priority,{})
+end
+function EatJob:actions()
+  local o = self.owner
+  print('EatJob:actions()', self, o, o.inventory.food)
+  if o.inventory.food >= 1 then
+    local dev_table = o.ship:locate_device('Table',o.location.x,o.location.y,true);
+    print(dev_table)
+    return {
+      FinishJobAction(self, o),
+      OperateAction(self, o, dev_table, 1.0),
+      WalkAction(self, o, dev_table.cell),
+      StartJobAction(self, o) }
+  else
+    local dev_nd = o.ship:locate_device('NutrientDispenser',o.location.x,o.location.y,true);
+    local dev_table = o.ship:locate_device('Table',dev_nd.cell.x,dev_nd.cell.y,true);
+    print(dev_nd, dev_table)
+    return {
+      FinishJobAction(self, o),
+      OperateAction(self, o, dev_table, 1.0),
+      WalkAction(self, o, dev_table.cell),
+      OperateAction(self, o, dev_nd, 1.0),
+      WalkAction(self, o, dev_nd.cell),
+      StartJobAction(self, o) }
+  end
+end
 
 ----------
 SleepJob = class("SleepJob", Job)
 
 ----------
 WasteJob = class("WasteJob", Job)
+function WasteJob:initialize(priority)
+  self.class.super.initialize(self,'waste',priority,{})
+end
+function WasteJob:actions()
+  local o = self.owner
+  local dev_toilet = o.ship:locate_device('Toilet',o.location.x,o.location.y,true);
+  return {
+    FinishJobAction(self, o),
+    OperateAction(self, o, dev_toilet, 1.0),
+    WalkAction(self, o, dev_toilet.cell),
+    StartJobAction(self, o) }
+end
 
 ----------
 OperateJob = class("OperateJob", Job)
@@ -88,11 +128,12 @@ function OperateJob:initialize(priority,min_skills,device)
 end
 
 function OperateJob:actions()
+  local o = self.owner
   return {
-    FinishJobAction(self, self.owner),
-    OperateAction(self, self.owner, self.device, 1.0),
-    WalkAction(self, self.owner, self.device.cell),
-    StartJobAction(self, self.owner) }
+    FinishJobAction(self, o),
+    OperateAction(self, o, self.device, 1.0),
+    WalkAction(self, o, self.device.cell),
+    StartJobAction(self, o) }
 end
 
 ----------
@@ -112,7 +153,7 @@ end
 function RepairJob:actions()
   return {
     FinishJobAction(self, self.owner),
-    RepairAction(self, self.owner, self.device, 1.0),
+    RepairAction(self, self.owner, self.device, 5.0),
     WalkAction(self, self.owner, self.device.cell),
     StartJobAction(self, self.owner) }
 end
@@ -135,10 +176,8 @@ function Action:execute(dt) return 'done' end
 
 -- book-keeping action
 StartJobAction = class("StartJobAction", Action)
-
 function StartJobAction:__tostring() return "StartJobAction" end
-
-function StartJobAction:finish()
+function StartJobAction:start()
   if self.job then
     self.job:start()
   end
@@ -146,10 +185,8 @@ end
 
 -- book-keeping action
 FinishJobAction = class("FinishJobAction", Action)
-
 function FinishJobAction:__tostring() return "FinishJobAction" end
-
-function FinishJobAction:finish()
+function FinishJobAction:start()
   if self.job then
     self.job:finish()
   end
@@ -170,6 +207,7 @@ end
 
 function WaitAction:execute(dt)
   self.elapsed = self.elapsed + dt
+  self.agent.level.stress = math.max(0.0, self.agent.level.stress - dt*self.agent.skills.zen)
   if self.elapsed >= self.time then
     return 'done'
   else
@@ -251,6 +289,7 @@ function RepairAction:start()
   self.agent.anim = self.agent.animations.operate
 end
 
+-- TODO: early complete when repairs completed
 function RepairAction:execute(dt)
   dt = dt * self.agent.work_speed
   self.elapsed = self.elapsed + dt
@@ -283,13 +322,21 @@ function OperateAction:initialize(job,agent,device,time)
   self.class.super.initialize(self,job,agent)
   self.device = device
   self.elapsed = 0
-  self.device.start_operate(self.agent)
+end
+
+function OperateAction:start()
+  self.device.claim = self.agent
+end
+
+function OperateAction:finish()
+  self.device.claim = nil
 end
 
 function OperateAction:execute(dt)
   self.elapsed = self.elapsed + dt
-  if self.device.operate(self.agent, dt)=='done' then
-    self.device.stop_operate(self.agent)
+  local res = self.device:operate(self.agent, dt)
+  if res=='done' then
+    self.device:stop_operate(self.agent)
     return 'done'
   else
     return 'in-progress'
