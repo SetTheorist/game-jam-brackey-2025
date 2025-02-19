@@ -1,3 +1,6 @@
+unused
+*.swp
+
 # Compiled Lua sources
 luac.out
 
