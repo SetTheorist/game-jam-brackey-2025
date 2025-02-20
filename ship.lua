@@ -3,6 +3,7 @@ local class = class or require "middleclass"
 local path = path or require "path"
 
 --------------------------------------------------------------------------------
+--[[
 MAP = {
   "#q#h#h#h#h#h#h#h#h#h#w",
   "#ver  nd      wd  sl#v",
@@ -22,29 +23,106 @@ MAP = {
   "#v    #v      #v  Ol#v",
   "#vRr  +v      +v  Tl#v",
   "#v    #v      #v  Sl#v",
-  "#a#h#h#u#h*h#h#u#h#h#s",
+  "#a#h#h#u#h#h#h#u#h#h#s",
+}
+--]]
+
+MAP_X,MAP_Y = 19,20
+
+MAP_WALLS = {
+  "quuuuwquuuuuwquuuuw",
+  "adDddsl.....raddDds",
+  "quUuuwaddDddsquuUuw",
+  "l.....uuuUuuu.....r",
+  "addd............dds",
+  "quuwl..ddDdd...rquw",
+  "adDsl.rquUuwl..RL.r",
+  "quUwl.radddsl..rl.r",
+  "l..rl.rquuuwl..rl.r",
+  "l..RL.rl...rl..rl.r",
+  "l..rl.radDdsl..rl.r",
+  "l..rl..uuUuu...rl.r",
+  "adDsl..........RL.r",
+  "quUwl..........rads",
+  "addsl...........uuw",
+  "quuu..............r",
+  "l....ddddDdddd....r",
+  "adDdsquuuUuuuwadDds",
+  "quUuwl.......rquUuw",
+  "adddsadddddddsaddds",
+}
+MAP_DEVICE = {
+  "N1N2 .E1E2 . .Z1 .B1 .D1 . .S1S2 .W1W2",
+  " . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . .",
+  "n1n2n3n4 . . . . . . . . . . . . .C1C2",
+  " . . . . . . . . . . . . . . . . . . .",
+  "b1b1 . . . . . .m1m2m3 . . . . . .O1O2",
+  "b1b1 . . . . . . . . . . . . . . . . .",
+  "b1b1 . . . . . .R1R2R3 . . . . . .T1T2",
+  "b1b1 . . . . . . . . . . . . . . . . .",
+  "b1b1 . . . . . . . . . . . . . . .L1L2",
+  " . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . .F1F2",
+  "t1t1t1t1 . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . . . . . . . . . . . . . .",
+  " . . . . . . .J1J2 .J1J2 . . . . . . .",
+  " .P1P2P3 . . .J3J4 .J3J4 . . .P1P2P3 .",
+}
+
+CODE_TO_DEVICE = {
+  B=FlightConsole,
+  b=Bed,
+  C=Co2Scrubber,
+  D=DefenseConsole,
+  E=SensorSystem,
+  F=FoodSynthesizer,
+  J=FTLJumpDrive,
+  L=WasteReclamation,
+  m=MedicalBay,
+  N=NavigationSystem,
+  n=NutrientDispenser,
+  O=O2Reprocessor,
+  P=PropulsionSystem,
+  R=ReactorCore,
+  S=ShieldSystem,
+  T=ThermalRegulator,
+  t=Toilet,
+  W=WeaponSystem,
+  Z=FTLJumpConsole,
+}
+
+-- TODO: wall images by code
+-- >^<v (ruld)
+CODE_TO_WALLS = {
+  ['.'] = {false,false,false,false},
+  q={false,true ,true ,false},
+  w={true ,true ,false,false},
+  a={false,false,true ,true },
+  s={true ,false,false,true },
+  l={false,false,true ,false},
+  r={true ,false,false,false},
+  u={false,true ,false,false},
+  d={false,false,false,true },
+  L={false,false,false,false}, -- door handled differently
+  R={false,false,false,false}, -- door handled differently
+  U={false,false,false,false}, -- door handled differently
+  D={false,false,false,false}, -- door handled differently
 }
 
 --------------------------------------------------------------------------------
 
-CELL_CHARS = {
-  door={h='─',v='│'},
-  airlock='*',
-  empty=' ',
-  --ox hv udlr qwas
-  --┼╬ ═║ ╩╦╣╠ ╔╗╚╝
-  wall={o='┼',x='╬ ',h='═',v='║ ',u='╩',d='╦',l='╣',r='╠ ',q='╔',w='╗',a='╚',s='╝'},
-  bed='=',
-  table='^',
-}
-
-
 Cell = class("Cell")
-function Cell:initialize(idx,x,y,device,char,passable,args)
+function Cell:initialize(idx,x,y,device,char,args)
   self.device = device
   self.char = char
-  self.passable = passable
   self.neighbors = {}
+  self.walls = {false,false,false,false}
+  self.passable = true -- TODO: make some impassable?
   self.cost = 1.0
   self.idx = idx
   self.x = x
@@ -52,36 +130,84 @@ function Cell:initialize(idx,x,y,device,char,passable,args)
   if args then for k,v in pairs(args) do self[k]=v end end
 end
 function Cell:__tostring()
-  return string.format("[%s:%s(%i,%i)]", self.char, self.passable, self.x, self.y)
-end
-
-function EmptyCell(code,idx,x,y)
-  local c = Cell(idx,x,y,nil,' ', true)
-  return c
-end
-function AirlockCell(code,idx,x,y)
-  local c = Cell(idx,x,y,nil,'*', false)
-  return c
-end
-function WallCell(code,idx,x,y)
-  local ch = CELL_CHARS.wall[code] or '#'
-  local c = Cell(idx,x,y,nil,ch, false)
-  return c
-end
--- TODO: clean this up
-function DoorCell(code,idx,x,y)
-  local ch = CELL_CHARS.door[code] or '+'
-  local c = Cell(idx,x,y,nil,ch, true,{is_locked=false,cost=1.5})
-  c.device = Door(ship,c)
-  return c
+  return string.format("[%s:%i,%i]", self.char, self.x, self.y)
 end
 
 --------------------------------------------------------------------------------
 Ship = class("Ship")
 
-function Ship:initialize(map)
-  self.devices = {}
+function Ship:setup_map()
+  self.x_size = MAP_X
+  self.y_size = MAP_Y
 
+  -- setup cells
+  self.cells = {}
+  self.devices = {}
+  for y=1,MAP_Y do
+    local row = MAP_DEVICE[y]
+    for x=1,MAP_X do
+      local idx = self:idx(x,y)
+      local ch = row:sub(2*x-1,2*x-1)
+      local var = tonumber(row:sub(2*x,2*x))
+      local c = Cell(idx,x,y,nil,ch,{})
+      if ch==' ' then
+        -- nop
+      elseif CODE_TO_DEVICE[ch] then
+         local d = CODE_TO_DEVICE[ch](self,c,var)
+         self.devices[#self.devices+1] = d
+         c.device = d
+      else
+        print("ERROR: unknown device code in map setup", ch, x, y)
+      end
+      self.cells[idx] = c
+    end
+  end
+
+  -- setup edges
+  for y=1,MAP_Y do
+    local row = MAP_WALLS[y]
+    for x=1,MAP_X do
+      local idx = self:idx(x,y)
+      local c = self.cells[idx]
+      local ch = row:sub(x,x)
+      local w = CODE_TO_WALLS[ch]
+      local n = {}
+      if not w[1] then n[#n+1] = self:idx(x+1,y  ) end
+      if not w[2] then n[#n+1] = self:idx(x  ,y-1) end
+      if not w[3] then n[#n+1] = self:idx(x-1,y  ) end
+      if not w[4] then n[#n+1] = self:idx(x  ,y+1) end
+      c.neighbors = n
+      c.walls = w
+    end
+  end
+
+  self.devices_by_name = {}
+  for _,d in ipairs(self.devices) do
+    local n = d.class.name
+    if not self.devices_by_name[n] then self.devices_by_name[n] = {} end
+    local a = self.devices_by_name[n]
+    a[#a+1] = d
+  end
+
+  print('----------')
+  for y=1,MAP_X do
+    for x=1,MAP_X do
+      io.write(self:cell(x,y).char)
+    end
+    print()
+  end
+  print('----------')
+  for y=1,MAP_Y do
+    for x=1,MAP_X do
+      local w = self:cell(x,y).walls
+      local x = ((w[1] and 1) or 0)+((w[2] and 2) or 0)+((w[3] and 4) or 0)+((w[4] and 8) or 0)
+      io.write(("0123456789ABCDEF"):sub(x+1,x+1))
+    end
+    print()
+  end
+end
+
+function Ship:initialize()
   self.level = {
     co2=Level('co2',50.0, 0,1000, 0),
     energy=Level('energy',500.0, 0,1000, 0),
@@ -102,56 +228,7 @@ function Ship:initialize(map)
     --]]
     }
 
-  self.x_size = #map[1]/2
-  self.y_size = #map
-  self.cells = {}
-  for y,row in ipairs(map) do
-    for x=1,#row/2 do
-      local idx = self:idx(x,y)
-      local ch = row:sub(2*x-1,2*x-1)
-      local code = row:sub(2*x,2*x)
-      local c
-      if ch==' ' then
-        c = EmptyCell(code,idx,x,y)
-      elseif ch=='#' then
-        c = WallCell(code,idx,x,y)
-      elseif ch=='+' then
-        c = DoorCell(code,idx,x,y)
-      elseif ch=='*' then
-        c = AirlockCell(code,idx,x,y)
-      else
-        -- TODO: device emplacement
-        c = EmptyCell(code,idx,x,y)
-        c.char = ch
-        if DEVICES[ch] then
-          local d = DEVICES[ch](self,c)
-          self.devices[#self.devices+1] = d
-          c.device = d
-        end
-      end
-      self.cells[idx] = c
-    end
-  end
-
-  -- setup edges
-  for i,c in ipairs(self.cells) do
-    local x0,y0 = self:xy(i)
-    if self:cell(x0,y0).passable then
-      local n = c.neighbors
-      if x0>1             and self:cell(x0-1,y0).passable then n[#n+1] = self:idx(x0-1,y0) end
-      if x0<self.x_size-1 and self:cell(x0+1,y0).passable then n[#n+1] = self:idx(x0+1,y0) end
-      if y0>1             and self:cell(x0,y0-1).passable then n[#n+1] = self:idx(x0,y0-1) end
-      if y0<self.y_size-1 and self:cell(x0,y0+1).passable then n[#n+1] = self:idx(x0,y0+1) end
-    end
-  end
-
-  self.devices_by_name = {}
-  for _,d in ipairs(self.devices) do
-    local n = d.class.name
-    if not self.devices_by_name[n] then self.devices_by_name[n] = {} end
-    local a = self.devices_by_name[n]
-    a[#a+1] = d
-  end
+  self:setup_map()
 end
 
 function Ship:path(c0,c1)
@@ -235,20 +312,31 @@ function Ship:draw_map()
   for y=1,self.y_size do
     for x=1,self.x_size do
       local cl = self:cell(x,y)
-      local c = cl.char
-      if cl.device=='wall' then
-        love.graphics.setColor(0.5,0.5,0.5)
-      elseif c=='*' then
-        love.graphics.setColor(0.3,0.4,0.5)
-      elseif cl.device=='door' then
-        love.graphics.setColor(0.5,0.4,0.3)
-      else
-        love.graphics.setColor(0.7,0.7,0.8)
-      end
+
+      love.graphics.setColor(0.7,0.7,0.8)
       love.graphics.rectangle('fill', (x-1)*24, (y-1)*24, 24, 24)
 
       love.graphics.setColor(0.1,0.1,0.5,0.25)
       love.graphics.rectangle('line', (x-1)*24, (y-1)*24, 24, 24)
+
+      love.graphics.setLineWidth(2)
+      if cl.walls[1] then
+        love.graphics.setColor(0.6,0.5,0.7,1)
+        love.graphics.line(x*24-1,(y-1)*24,x*24-1,y*24)
+      end
+      if cl.walls[4] then
+        love.graphics.setColor(0.6,0.5,0.7,1)
+        love.graphics.line((x-1)*24,y*24-1,x*24,y*24-1)
+      end
+      if cl.walls[3] then
+        love.graphics.setColor(0.5,0.4,0.5,1)
+        love.graphics.line((x-1)*24+1,(y-1)*24,(x-1)*24+1,y*24)
+      end
+      if cl.walls[2] then
+        love.graphics.setColor(0.5,0.4,0.5,1)
+        love.graphics.line((x-1)*24,(y-1)*24+1,x*24,(y-1)*24+1)
+      end
+      love.graphics.setLineWidth(1)
 
       if cl.device and cl.device.draw then
         love.graphics.push()
@@ -256,6 +344,7 @@ function Ship:draw_map()
           cl.device:draw()
         love.graphics.pop()
       else
+        local c = cl.char
         love.graphics.setColor(1,1,1,1)
         love.graphics.print(c, FONT_1, 6+(x-1)*24, 4+(y-1)*24)
       end

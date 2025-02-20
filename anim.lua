@@ -6,7 +6,6 @@ local class = class or require "middleclass"
 local Anim = class("Anim")
 
 function Anim:initialize(fps,image,nx,ny,frame_w,frame_h,frame_x,frame_y,frame_gap)
-  print(fps,image,'nx',nx,'ny',ny,frame_w,frame_h,'fx',frame_x,'fy',frame_y,frame_gap)
   self.fps = fps
   self.fps_scale = 1.0
   self.frame = 0

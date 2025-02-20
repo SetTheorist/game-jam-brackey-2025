@@ -56,12 +56,14 @@ function Crew:initialize(name,ship)
   self.work_speed = 1/2 + math.floor(love.math.random()*64)/64*(3/4)
   self.color = {0.5+love.math.random()*0.5,0.5+love.math.random()*0.5,0.5+love.math.random()*0.5}
   self.color[love.math.random(3)] = 0.0
-  print('-')
   self.animations = {
-    idle    = Anim(4,CREW_1_IMAGE,4,1, 24,24, 0, 0, 0),
-    walk    = Anim(1,CREW_1_IMAGE,4,1, 24,24, 0,24, 0),
-    operate = Anim(1,CREW_1_IMAGE,4,1, 24,24, 0,48, 0),
-    repair  = Anim(1,CREW_1_IMAGE,4,1, 24,24, 0,48, 0),
+    idle    = Anim(4,CREW_IMAGE,4,1, 24,24, 0, 0, 0),
+    sleep   = Anim(4,CREW_IMAGE,4,1, 24,24, 0, 0, 0),
+    --
+    walk    = Anim(1,CREW_IMAGE,4,1, 24,24, 0,24, 0),
+    --
+    operate = Anim(1,CREW_IMAGE,4,1, 24,24, 0,48, 0),
+    repair  = Anim(1,CREW_IMAGE,4,1, 24,24, 0,48, 0),
     }
   self.animations.walk:set_fps_scale(6*self.walk_speed/4)
   self.animations.operate:set_fps_scale(5*self.work_speed)
@@ -77,10 +79,8 @@ function Crew:initialize(name,ship)
   self.location = {x=ship.cells[c1].x+0.5,y=ship.cells[c1].y+0.5}
   self.facing = 0
 
-  self.inventory = {food=0}
-
   self.current_job = nil
-  self.current_action = Action(self,nil)
+  self.current_action = nil
   self.action_stack = {}
   self.job_stack = {}
 
@@ -90,10 +90,9 @@ function Crew:initialize(name,ship)
 end
 
 function Crew:__tostring()
-  return string.format("<%s@%0.01f,%0.01f|o%0.01f,h%0.01f,f%0.01f,r%0.01f,s%0.01f,w%0.01f{f%.01f}%s>", self.name,
+  return string.format("<%s@%0.01f,%0.01f|o%0.01f,h%0.01f,f%0.01f,r%0.01f,s%0.01f,w%0.01f|%s>", self.name,
     self.location.x, self.location.y,
     self.level.o2, self.level.health, self.level.food, self.level.rest, self.level.stress, self.level.waste,
-    self.inventory.food,
     (self.current_action or '-')
     )
 end
@@ -222,6 +221,7 @@ function Crew:update(dt)
 
   -- metabolism
   -- TODO: replenish o2 if <max
+  -- TODO: incorporate co2 levels somehow
   local do2 = self.ship.level.o2:sub(2*dt)
   self.level.o2 = self.level.o2 - (2*dt - do2)
   self.ship.level.co2:add(2*dt)
@@ -230,8 +230,11 @@ function Crew:update(dt)
   self.level.health = math.min(100.0, self.level.health + dt*1/64)
   self.level.food = math.min(100.0, self.level.food - dt*1/64)
   self.level.rest = math.min(100.0, self.level.rest - dt*1/64)
-  self.level.stress = math.min(1000.0, self.level.stress + dt*1/64)
   self.level.waste = math.min(200.0, self.level.waste + dt*1/128)
+
+  if love.math.random() < (1.0-self.skills.zen)*dt then
+    self.level.stress = math.min(1000.0, self.level.stress + love.math.random())
+  end
   
   if self.level.waste>100 then
     if love.math.random()*100 < self.level.waste-100 then

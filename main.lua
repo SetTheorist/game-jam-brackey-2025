@@ -23,15 +23,22 @@ chosen_cell = nil
 chosen_crew = nil
 chosen_crew_idx = 1
 
+the_score = 100
+
 local elapsed_time = 0
 local paused = false
 
 FONT_1 = nil
 
-CREW_1_IMAGE = nil
+CREW_IMAGE = nil
 
 ELECTRONIC_IMAGE = nil
 ELECTRONIC_ANIM = nil
+MECHANICAL_IMAGE = nil
+MECHANICAL_ANIM = nil
+QUANTUM_IMAGE = nil
+QUANTUM_ANIM = nil
+
 BED_IMAGE = nil
 CONSOLE_IMAGE = nil
 CONSOLE_ANIM = nil
@@ -48,8 +55,6 @@ MACHINE_2_IMAGE = nil
 MACHINE_2_ANIM = nil
 CONSOLE_1_IMAGE = nil
 CONSOLE_1_ANIM = nil
-
-AUTO_REPAIR_JOBS = false
 
 AUDIO = {}
 
@@ -83,7 +88,7 @@ function love.load()
   --love.keyboard.getKeyFromScancode('w')
   --love.window.setMode(1024, 768, {resizable=false, centered=true, fullscreen=true})
 
-  CREW_1_IMAGE = love.graphics.newImage(string.format('art/crew-1.png'))
+  CREW_IMAGE = love.graphics.newImage(string.format('art/crew.png'))
 
   SHIP_FRAME_IMAGE = love.graphics.newImage(string.format('art/ship-frame.png'))
 
@@ -92,6 +97,16 @@ function love.load()
     Anim(3.6,ELECTRONIC_IMAGE,5,1,24,24,0,0,0),
     Anim(4.1,ELECTRONIC_IMAGE,5,1,24,24,0,24,0),
     Anim(4.6,ELECTRONIC_IMAGE,5,1,24,24,0,48,0)}
+  MECHANICAL_IMAGE = love.graphics.newImage(string.format('art/mechanical.png'))
+  MECHANICAL_ANIM = {
+    Anim(3.6,MECHANICAL_IMAGE,5,1,24,24,0,0,0),
+    Anim(4.1,MECHANICAL_IMAGE,5,1,24,24,0,24,0),
+    Anim(4.6,MECHANICAL_IMAGE,5,1,24,24,0,48,0)}
+  QUANTUM_IMAGE = love.graphics.newImage(string.format('art/quantum.png'))
+  QUANTUM_ANIM = {
+    Anim(3.5,QUANTUM_IMAGE,5,1,24,24,0,0,0),
+    Anim(3.9,QUANTUM_IMAGE,5,1,24,24,0,24,0),
+    Anim(4.3,QUANTUM_IMAGE,5,1,24,24,0,48,0)}
   BED_IMAGE = love.graphics.newImage(string.format('art/bed.png'))
   CONSOLE_1_IMAGE = love.graphics.newImage(string.format('art/console-1.png'))
   CONSOLE_1_ANIM = Anim(3,CONSOLE_1_IMAGE,4,1,48,24,0,0,0)
@@ -108,7 +123,7 @@ function love.load()
 
 
 
-  the_ship = Ship(MAP)
+  the_ship = Ship()
   for i,n in ipairs({'pat','chris','terry','dana','francis','jean','jo','jordan','cameron','casey','kelly','ollie'}) do
     the_crew[#the_crew+1] = Crew(n,the_ship)
     --if i==5 then break end
@@ -186,12 +201,10 @@ function love.update(dt)
   end
 
   CONSOLE_ANIM:update(dt)
-  --REACTOR_ANIM:update(dt)
   REACTOR4_ANIM:update(dt)
   MACHINE_1_ANIM:update(dt)
   MACHINE_2_ANIM:update(dt)
   CONSOLE_1_ANIM:update(dt)
-  --for i=1,3 do ELECTRONIC_ANIM[i]:update(dt) end
 end
 
 ----------------------------------------
@@ -201,12 +214,10 @@ function love.slow_game_tick(dt)
   end
   the_ship:slow_update(dt)
 
-  if AUTO_REPAIR_JOBS then
-    for _,d in ipairs(the_ship.devices) do
-      if d.total_health < 0.5 and not d.repair_job then
-        the_jobs[#the_jobs+1] = RepairJob(3.0,{},d)
-        print("Repair", d)
-      end
+  for _,d in ipairs(the_ship.devices) do
+    if d.total_health <= 1/64 and not d.repair_job then
+      the_jobs[#the_jobs+1] = RepairJob(3.0,{},d)
+      print("Auto-Repair", d)
     end
   end
 end
@@ -266,11 +277,6 @@ function love.draw()
     CONSOLE_ANIM.rotation = 0
     CONSOLE_ANIM:draw(dt)
     love.graphics.setColor(1,1,1,1)
-    --REACTOR_ANIM.x = REACTOR_X*24-12
-    --REACTOR_ANIM.y = REACTOR_Y*24-12
-    --REACTOR_ANIM.rotation = 0
-    --REACTOR_ANIM:draw()
-    love.graphics.setColor(1,1,1,1)
     REACTOR4_ANIM.x = REACTOR_X*24+76-4
     REACTOR4_ANIM.y = REACTOR_Y*24
     REACTOR4_ANIM.rotation = 0
@@ -279,15 +285,6 @@ function love.draw()
       love.graphics.setColor(1,0,1,0.8)
       love.graphics.rectangle('line',(chosen_cell.x-1)*24,(chosen_cell.y-1)*24,24,24)
     end
-    --[[
-    love.graphics.setColor(1,1,1,1)
-    love.graphics.draw(BED_IMAGE,  (8.5-1)*24-12,(6.5-1)*24-12)
-    love.graphics.draw(BED_IMAGE,  (9.5-1)*24-12,(6.5-1)*24-12)
-    love.graphics.draw(BED_IMAGE, (10.5-1)*24-12,(6.5-1)*24-12)
-    love.graphics.draw(BED_IMAGE,  (8.5-1)*24-12,(8.5-1)*24-12)
-    love.graphics.draw(BED_IMAGE,  (9.5-1)*24-12,(8.5-1)*24-12)
-    love.graphics.draw(BED_IMAGE, (10.5-1)*24-12,(8.5-1)*24-12)
-    --]]
 
     MACHINE_1_ANIM.x = (6-1)*24
     MACHINE_1_ANIM.y = (2.5-1)*24
@@ -303,21 +300,6 @@ function love.draw()
     CONSOLE_1_ANIM.rotation = 0
     CONSOLE_1_ANIM:draw()
 
-    --[[
-    love.graphics.setColor(1,1,1,1)
-    ELECTRONIC_ANIM[1].x = (8.5-1)*24
-    ELECTRONIC_ANIM[1].y = (6.5-1)*24
-    ELECTRONIC_ANIM[1].rotation = 0
-    ELECTRONIC_ANIM[1]:draw()
-    ELECTRONIC_ANIM[2].x = (9.5-1)*24
-    ELECTRONIC_ANIM[2].y = (6.5-1)*24
-    ELECTRONIC_ANIM[2].rotation = 0
-    ELECTRONIC_ANIM[2]:draw()
-    ELECTRONIC_ANIM[3].x = (10.5-1)*24
-    ELECTRONIC_ANIM[3].y = (6.5-1)*24
-    ELECTRONIC_ANIM[3].rotation = 0
-    ELECTRONIC_ANIM[3]:draw()
-    --]]
   love.graphics.pop()
 
   love.graphics.setColor(1,0.5,1,1)
@@ -330,28 +312,8 @@ function love.draw()
   love.graphics.print(
     string.format('Time: %02i:%02i', td_day, td_hour), 900,16*1)
 
-  --[[
-  love.graphics.setColor(1,1,1,1)
-  local i = 2
-  for _,l in pairs(the_ship.level) do
-    love.graphics.print(tostring(l),800,16*i)
-    i = i+1
-  end
-  --]]
-  --[[
-  for i,d in ipairs(the_ship.devices) do
-    love.graphics.print(tostring(d),700,200+16*i)
-  end
-  --]]
-  --[[
-  for i,c in ipairs(the_crew) do
-    love.graphics.setColor(c.color[1],c.color[2],c.color[3],1.0)
-    love.graphics.print(tostring(c),24,520+i*16)
-  end
-  --]]
-
   love.graphics.push()
-    love.graphics.translate(24,600+16+16)
+    love.graphics.translate(24,600+48)
     draw_crew_panel()
   love.graphics.pop()
 

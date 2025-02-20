@@ -76,24 +76,12 @@ function EatJob:initialize(priority)
 end
 function EatJob:actions()
   local o = self.owner
-  if o.inventory.food >= 1 then
-    local dev_table = o.ship:locate_device('Table',o.location.x,o.location.y)
-    return {
-      FinishJobAction(self, o),
-      OperateAction(self, o, dev_table, 1.0),
-      WalkAction(self, o, dev_table.cell),
-      StartJobAction(self, o) }
-  else
-    local dev_nd = o.ship:locate_device('NutrientDispenser',o.location.x,o.location.y)
-    local dev_table = o.ship:locate_device('Table',dev_nd.cell.x,dev_nd.cell.y)
-    return {
-      FinishJobAction(self, o),
-      OperateAction(self, o, dev_table, 1.0),
-      WalkAction(self, o, dev_table.cell),
-      OperateAction(self, o, dev_nd, 1.0),
-      WalkAction(self, o, dev_nd.cell),
-      StartJobAction(self, o) }
-  end
+  local dev_nd = o.ship:locate_device('NutrientDispenser',o.location.x,o.location.y)
+  return {
+    FinishJobAction(self, o),
+    OperateAction(self, o, dev_nd, 1.0),
+    WalkAction(self, o, dev_nd.cell),
+    StartJobAction(self, o) }
 end
 
 ----------
