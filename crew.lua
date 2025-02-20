@@ -28,45 +28,53 @@ EFFECTS:
 function Crew:initialize(name,ship)
   self.ship = ship
   self.skills = {
-    combat_melee=math.floor(love.math.random()*128)/128,
-    combat_ranged=math.floor(love.math.random()*128)/128,
-    manning_comms=math.floor(love.math.random()*128)/128,
-    manning_navigations=math.floor(love.math.random()*128)/128,
-    manning_propulsion=math.floor(love.math.random()*128)/128,
-    manning_reactor=math.floor(love.math.random()*128)/128,
-    manning_sensors=math.floor(love.math.random()*128)/128,
-    manning_shields=math.floor(love.math.random()*128)/128,
-    manning_weapons=math.floor(love.math.random()*128)/128,
-    repair_electronic=math.floor(love.math.random()*128)/128,
-    repair_mechanical=math.floor(love.math.random()*128)/128,
-    repair_quantum=math.floor(love.math.random()*128)/128,
-    zen=math.floor(love.math.random()*128)/128,
+    combat_melee  = love.math.random(128)/128,
+    combat_ranged = love.math.random(128)/128,
+    manning_comms       = love.math.random(128)/128,
+    manning_navigations = love.math.random(128)/128,
+    manning_propulsion  = love.math.random(128)/128,
+    manning_reactor     = love.math.random(128)/128,
+    manning_sensors     = love.math.random(128)/128,
+    manning_shields     = love.math.random(128)/128,
+    manning_weapons     = love.math.random(128)/128,
+    repair_electronic = love.math.random(128)/128,
+    repair_mechanical = love.math.random(128)/128,
+    repair_quantum    = love.math.random(128)/128,
+    zen = love.math.random(128)/128,
     }
 
   self.level = {
-    health=100-10*love.math.random(),
-    food=10+50*love.math.random(),
+    health=100-50*love.math.random(64)/64,
+    food=10+50*love.math.random(64)/64,
     o2=120,
-    waste=1+10*love.math.random(),
-    rest=100,
+    waste=1+10*love.math.random(64)/64,
+    rest=100-30*love.math.random(64)/64,
     stress=10,
     }
   self.name = name
-  self.walk_speed = 1.0 + 3.0*math.floor(love.math.random()*64)/64
+  self.walk_speed = 2.0 + 3.0*math.floor(love.math.random()*64)/64
   self.work_speed = 1/2 + math.floor(love.math.random()*64)/64*(3/4)
   self.color = {0.5+love.math.random()*0.5,0.5+love.math.random()*0.5,0.5+love.math.random()*0.5}
   self.color[love.math.random(3)] = 0.0
+  print('-')
   self.animations = {
-    idle=Anim(4,CREW_1_IDLE_IMAGE,4,24,24,0,0,0),
-    walk=Anim(6*(self.walk_speed/4),CREW_1_WALK_IMAGE,4,24,24,0,0,0),
-    operate=Anim(6*(self.work_speed),CREW_1_WORK_IMAGE,4,24,24,0,0,0),
-    repair=Anim(6*(self.work_speed),CREW_1_WORK_IMAGE,4,24,24,0,0,0),
+    idle    = Anim(4,CREW_1_IMAGE,4,1, 24,24, 0, 0, 0),
+    walk    = Anim(1,CREW_1_IMAGE,4,1, 24,24, 0,24, 0),
+    operate = Anim(1,CREW_1_IMAGE,4,1, 24,24, 0,48, 0),
+    repair  = Anim(1,CREW_1_IMAGE,4,1, 24,24, 0,48, 0),
     }
+  self.animations.walk:set_fps_scale(6*self.walk_speed/4)
+  self.animations.operate:set_fps_scale(5*self.work_speed)
+  self.animations.repair:set_fps_scale(6*self.work_speed)
   self.anim = self.animations.walk
 
   self.effects = {}
   
-  self.location = {x=love.math.random(3,10)+0.5,y=love.math.random(3,5)+0.5}
+  local c1
+  repeat
+    c1 = love.math.random(#ship.cells)
+  until ship.cells[c1].passable
+  self.location = {x=ship.cells[c1].x+0.5,y=ship.cells[c1].y+0.5}
   self.facing = 0
 
   self.inventory = {food=0}
@@ -90,6 +98,23 @@ function Crew:__tostring()
     )
 end
 
+function Crew:die()
+  if self.current_job then
+    self.current_job:finish()
+    self.current_job:unclaim()
+    self.current_job = nil
+  end
+  if self.current_action then
+    self.current_action:finish()
+    self.current_action = nil
+    self.job_stack = {}
+  end
+  if chosen_crew == self then
+    chosen_crew = nil
+  end
+  -- TODO: rest of death handling...
+end
+
 function Crew:slow_update(dt)
   local to_remove = {}
   local n = #self.effects
@@ -100,32 +125,37 @@ function Crew:slow_update(dt)
   end
 
   -- check basic needs
-  if self.level.health < 50 then
-    print(self,"medical-1")
-  elseif self.level.health < 10 then
-    print(self,"medical-2")
-  elseif self.level.food < 10  and not self.job_flags.EatJob then
-    print("Eat-10")
-    self.job_stack[#self.job_stack+1] = EatJob(1.0)
-    self.job_flags.EatJob = true
+  if self.level.health < 10 and not self.job_flags.MedJob then
+    self.job_stack[#self.job_stack+1] = MedJob(5.0)
+    self.job_flags.MedJob = true
+  elseif self.level.health < 50 and not self.job_flags.MedJob then
+    self.job_stack[#self.job_stack+1] = MedJob(1.0)
+    self.job_flags.MedJob = true
   elseif self.level.food < 1  and not self.job_flags.EatJob then
-    print("Eat-1")
     self.job_stack[#self.job_stack+1] = EatJob(5.0)
     self.job_flags.EatJob = true
+  elseif self.level.food < 10  and not self.job_flags.EatJob then
+    self.job_stack[#self.job_stack+1] = EatJob(1.0)
+    self.job_flags.EatJob = true
   elseif self.level.waste > 10 and not self.job_flags.WasteJob then
-    print("Waste")
     self.job_stack[#self.job_stack+1] = WasteJob(1.0)
     self.job_flags.WasteJob = true
   elseif self.level.rest < 10 then
-    print(self,"rest-1")
+    self.job_stack[#self.job_stack+1] = SleepJob(1.0)
+    self.job_flags.SleepJob = true
   elseif self.level.stress > 100 then
-    print(self,"stress-1")
+    --self.job_stack[#self.job_stack+1] = WaitJob(1.0)
+    --self.job_flags.WaitJob = true
+    --TODO: wait and/or wander and/or insanity :-)
   end
 end
 
 function Crew:claim_job(j)
-  j:claim(self)
-  self.action_stack = j:actions()
+  if j:claim(self) then
+    self.action_stack = j:actions()
+    return true
+  end
+  return false
 end
 
 -- TODO: should look at global job queue, etc.
@@ -135,7 +165,12 @@ function Crew:new_action()
   if #self.action_stack>0 then
     self.current_action = self.action_stack[#self.action_stack]
     self.action_stack[#self.action_stack] = nil
-    self.current_action:start()
+    if not self.current_action:start() then
+      --print("Failed to start action: waiting and retrying", self)
+      self.action_stack[#self.action_stack+1] = self.current_action
+      self.current_action = WaitAction(nil, self, love.math.random()+0.5)
+      self.current_action:start()
+    end
     return
   end
 
@@ -143,7 +178,10 @@ function Crew:new_action()
     local j = self.job_stack[#self.job_stack]
     self.job_stack[#self.job_stack] = nil
     self.job_flags[j.class.name] = nil
-    self:claim_job(j)
+    if not self:claim_job(j) then
+      print("ERROR: failure to claim job", self, j)
+      -- TODO!
+    end
     return
   end
 
@@ -151,13 +189,17 @@ function Crew:new_action()
     local j = the_jobs[#the_jobs]
     if j:check_skills(self) then
       the_jobs[#the_jobs] = nil
-      self:claim_job(j)
+      if not self:claim_job(j) then
+        print("ERROR: failure to claim job", self, j)
+        -- TODO!
+      end
       return
     end
   end
 
   if love.math.random()<0.50 then
     self.current_action = WaitAction(nil, self, love.math.random()+0.5)
+    self.current_action:start()
   else
     local c1
     repeat
@@ -166,30 +208,47 @@ function Crew:new_action()
     self.current_action = WalkAction(nil, self, self.ship.cells[c1])
     self.current_action:start()
   end
-  self.current_action:start()
 end
 
 function Crew:update(dt)
-  local to_remove = {}
+  -- effects
   local n = #self.effects
   for i=1,n do
     if self.effects[i].update(dt) then
-      -- remove
+      self.effects[i] = nil    
     end
   end
+  compact(self.effects, n)
 
+  -- metabolism
   -- TODO: replenish o2 if <max
   local do2 = self.ship.level.o2:sub(2*dt)
   self.level.o2 = self.level.o2 - (2*dt - do2)
-  self.ship.level.co2:add(dt)
+  self.ship.level.co2:add(2*dt)
   self.ship.level.temp:add(dt/16)
 
-  self.level.health = math.min(100.0, self.level.health + dt*1/256)
+  self.level.health = math.min(100.0, self.level.health + dt*1/64)
   self.level.food = math.min(100.0, self.level.food - dt*1/64)
   self.level.rest = math.min(100.0, self.level.rest - dt*1/64)
   self.level.stress = math.min(1000.0, self.level.stress + dt*1/64)
   self.level.waste = math.min(200.0, self.level.waste + dt*1/128)
+  
+  if self.level.waste>100 then
+    if love.math.random()*100 < self.level.waste-100 then
+      self.level.health = math.max(0.0, self.level.health - dt)
+    end
+  end
+  if self.level.food<10 then
+    if love.math.random()*100 < (10-self.level.food) then
+      self.level.health = math.max(0.0, self.level.health - dt)
+    end
+  end
+  if self.level.o2<1 then
+    self.level.health = math.max(0.0, self.level.health - dt)
+  end
+  -- TODO: stress
 
+  -- activity
   if not self.current_action then
     self:new_action()
   else
@@ -200,6 +259,7 @@ function Crew:update(dt)
     end
   end
 
+  -- animation
   self.anim.x = (self.location.x-1)*24
   self.anim.y = (self.location.y-1)*24
   self.anim.rotation = self.facing

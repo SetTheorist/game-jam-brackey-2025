@@ -9,7 +9,6 @@ function Job:initialize(name,priority,min_skills,args)
   self.name = name
   self.priority = priority
   self.min_skills = min_skills
-  self.device = nil
   self.owner = nil
   self.on_failure = 'drop'
   if args then
@@ -41,10 +40,15 @@ end
 function Job:claim(agent)
   if self.owner~=nil and self.owner~=agent then
     print("ERROR: Attempt to claim already-owned job", self, agent)
+    return false
   end
   self.owner = agent
   agent.current_job = self
   return true
+end
+
+function Job:unclaim()
+  self.owner = nil
 end
 
 ----------
@@ -56,17 +60,13 @@ end
 ----------
 WanderJob = class("WanderJob", Job)
 function WanderJob:actions()
-  local ship = self.owner.ship
-  local x,y
-  for i=1,100 do
-    x = love.math.random(ship.x_size)
-    y = love.math.random(ship.y_size)
-    if ship:cell(x,y).passable then
-      return {WalkAction(self,self.owner,{x=x,y=y})}
-    end
-  end
-  print("ERROR: unable to find valid target for WanderJob after 100 tries")
-  return {}
+  local sc = self.owner.ship.cells
+  -- TODO: abort on failure
+  local c1
+  repeat
+    c1 = love.math.random(#sc)
+  until sc[c1].passable
+  return {WalkAction(self,self.owner,sc[c1])}
 end
 
 ----------
@@ -76,19 +76,16 @@ function EatJob:initialize(priority)
 end
 function EatJob:actions()
   local o = self.owner
-  print('EatJob:actions()', self, o, o.inventory.food)
   if o.inventory.food >= 1 then
-    local dev_table = o.ship:locate_device('Table',o.location.x,o.location.y,true);
-    print(dev_table)
+    local dev_table = o.ship:locate_device('Table',o.location.x,o.location.y)
     return {
       FinishJobAction(self, o),
       OperateAction(self, o, dev_table, 1.0),
       WalkAction(self, o, dev_table.cell),
       StartJobAction(self, o) }
   else
-    local dev_nd = o.ship:locate_device('NutrientDispenser',o.location.x,o.location.y,true);
-    local dev_table = o.ship:locate_device('Table',dev_nd.cell.x,dev_nd.cell.y,true);
-    print(dev_nd, dev_table)
+    local dev_nd = o.ship:locate_device('NutrientDispenser',o.location.x,o.location.y)
+    local dev_table = o.ship:locate_device('Table',dev_nd.cell.x,dev_nd.cell.y)
     return {
       FinishJobAction(self, o),
       OperateAction(self, o, dev_table, 1.0),
@@ -100,7 +97,34 @@ function EatJob:actions()
 end
 
 ----------
+MedJob = class("MedJob", Job)
+function MedJob:initialize(priority)
+  self.class.super.initialize(self,'med',priority,{})
+end
+function MedJob:actions()
+  local o = self.owner
+  local dev_med = o.ship:locate_device('MedicalBay',o.location.x,o.location.y)
+  return {
+    FinishJobAction(self, o),
+    OperateAction(self, o, dev_med, 1.0),
+    WalkAction(self, o, dev_med.cell),
+    StartJobAction(self, o) }
+end
+
+----------
 SleepJob = class("SleepJob", Job)
+function SleepJob:initialize(priority)
+  self.class.super.initialize(self,'sleep',priority,{})
+end
+function SleepJob:actions()
+  local o = self.owner
+  local dev_bed = o.ship:locate_device('Bed',o.location.x,o.location.y)
+  return {
+    FinishJobAction(self, o),
+    OperateAction(self, o, dev_bed, 1.0),
+    WalkAction(self, o, dev_bed.cell),
+    StartJobAction(self, o) }
+end
 
 ----------
 WasteJob = class("WasteJob", Job)
@@ -109,7 +133,7 @@ function WasteJob:initialize(priority)
 end
 function WasteJob:actions()
   local o = self.owner
-  local dev_toilet = o.ship:locate_device('Toilet',o.location.x,o.location.y,true);
+  local dev_toilet = o.ship:locate_device('Toilet',o.location.x,o.location.y)
   return {
     FinishJobAction(self, o),
     OperateAction(self, o, dev_toilet, 1.0),
@@ -170,8 +194,8 @@ function Action:initialize(job,agent)
   self.job = job
   self.agent = agent
 end
-function Action:start() end
-function Action:finish() end
+function Action:start() return true end
+function Action:finish() return true end
 function Action:execute(dt) return 'done' end
 
 -- book-keeping action
@@ -180,7 +204,9 @@ function StartJobAction:__tostring() return "StartJobAction" end
 function StartJobAction:start()
   if self.job then
     self.job:start()
+    return true
   end
+  return false
 end
 
 -- book-keeping action
@@ -189,7 +215,9 @@ function FinishJobAction:__tostring() return "FinishJobAction" end
 function FinishJobAction:start()
   if self.job then
     self.job:finish()
+    return true
   end
+  return false
 end
 
 ----------
@@ -217,6 +245,7 @@ end
 
 function WaitAction:start()
   self.agent.anim = self.agent.animations.idle
+  return true
 end
 
 ----------
@@ -237,6 +266,7 @@ function WalkAction:start()
   local foundit,the_path = self.agent.ship:path(c0, self.target_cell)
   self.path = the_path
   self.agent.anim = self.agent.animations.walk
+  return true
 end
 
 function WalkAction:execute(dt)
@@ -286,7 +316,16 @@ function RepairAction:initialize(job,agent,device,time)
 end
 
 function RepairAction:start()
-  self.agent.anim = self.agent.animations.operate
+  if self.device:claim(self.agent) then
+    self.agent.anim = self.agent.animations.operate
+    return true
+  else
+    return false
+  end
+end
+
+function RepairAction:finish()
+  self.device:unclaim()
 end
 
 -- TODO: early complete when repairs completed
@@ -308,7 +347,10 @@ function RepairAction:execute(dt)
     self.device.health.quantum = math.max(0.0, math.min(1.0, self.device.health.quantum + x*dt))
   end
 
-  if self.elapsed >= self.time then
+  if self.elapsed >= self.time
+    or (self.device.health.electronic >= 1 and
+        self.device.health.mechanical >= 1 and
+        self.device.health.quantum >= 1) then
     return 'done'
   else
     return 'in-progress'
@@ -325,11 +367,11 @@ function OperateAction:initialize(job,agent,device,time)
 end
 
 function OperateAction:start()
-  self.device.claim = self.agent
+  return self.device:claim(self.agent)
 end
 
 function OperateAction:finish()
-  self.device.claim = nil
+  self.device:unclaim()
 end
 
 function OperateAction:execute(dt)

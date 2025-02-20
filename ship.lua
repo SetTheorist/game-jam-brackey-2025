@@ -4,27 +4,25 @@ local path = path or require "path"
 
 --------------------------------------------------------------------------------
 MAP = {
-  "..........................",
-  "..#q#h#h#h#h#h#h#h#h#h#w..",
-  "..#ver  nd      wd  sl#v..",
-  "..#vcr                #v..",
-  "..#vjr              pl#v..",
-  "..#r#h#h#w+h#h#d#h#h#h#l..",
-  "..#v    #v    #vbdbdbd#v..",
-  "..#vMr  +v    +v      #v..",
-  "..#v    #v    #vbububu#v..",
-  "..#r#h#h#l    #r#h#h#h#l..",
-  "..#vfr  #v    +v    tl#v..",
-  "..#v    +v    #r#h#h#h#l..",
-  "..#vzr  #v    #v    Wl#v..",
-  "..#vzr  #v    +v      #v..",
-  "..#vzr  #v    #v    Fl#v..",
-  "..#r#h#h#l+h#h#u#d#h#h#l..",
-  "..#v    #v      #v  Ol#v..",
-  "..#vRr  +v      +v  Tl#v..",
-  "..#v    #v      #v  Sl#v..",
-  "..#a#h#h#u#h*h#h#u#h#h#s..",
-  "..........................",
+  "#q#h#h#h#h#h#h#h#h#h#w",
+  "#ver  nd      wd  sl#v",
+  "#vcr                #v",
+  "#vjr              pl#v",
+  "#r#h#h#w+h#h#d#h#h#h#l",
+  "#v    #v    #vbdbdbd#v",
+  "#vMr  +v    +v      #v",
+  "#v    #v    #vbububu#v",
+  "#r#h#h#l    #r#h#h#h#l",
+  "#vfr  #v    +v    tl#v",
+  "#v    +v    #r#h#h#h#l",
+  "#vzr  #v    #v    Wl#v",
+  "#vzr  #v    +v      #v",
+  "#vzr  #v    #v    Fl#v",
+  "#r#h#h#l+h#h#u#d#h#h#l",
+  "#v    #v      #v  Ol#v",
+  "#vRr  +v      +v  Tl#v",
+  "#v    #v      #v  Sl#v",
+  "#a#h#h#u#h*h#h#u#h#h#s",
 }
 
 --------------------------------------------------------------------------------
@@ -33,7 +31,6 @@ CELL_CHARS = {
   door={h='─',v='│'},
   airlock='*',
   empty=' ',
-  space='.',
   --ox hv udlr qwas
   --┼╬ ═║ ╩╦╣╠ ╔╗╚╝
   wall={o='┼',x='╬ ',h='═',v='║ ',u='╩',d='╦',l='╣',r='╠ ',q='╔',w='╗',a='╚',s='╝'},
@@ -43,9 +40,8 @@ CELL_CHARS = {
 
 
 Cell = class("Cell")
-function Cell:initialize(idx,x,y,base_type,terrain,char,passable,args)
-  self.base_type = base_type
-  self.terrain = terrain
+function Cell:initialize(idx,x,y,device,char,passable,args)
+  self.device = device
   self.char = char
   self.passable = passable
   self.neighbors = {}
@@ -59,26 +55,24 @@ function Cell:__tostring()
   return string.format("[%s:%s(%i,%i)]", self.char, self.passable, self.x, self.y)
 end
 
-function SpaceCell(code,idx,x,y)
-  local c = Cell(idx,x,y,'space',nil,'.', false)
-  return c
-end
 function EmptyCell(code,idx,x,y)
-  local c = Cell(idx,x,y,'floor',nil,' ', true)
+  local c = Cell(idx,x,y,nil,' ', true)
   return c
 end
 function AirlockCell(code,idx,x,y)
-  local c = Cell(idx,x,y,'floor','airlock','*', false)
+  local c = Cell(idx,x,y,nil,'*', false)
   return c
 end
 function WallCell(code,idx,x,y)
   local ch = CELL_CHARS.wall[code] or '#'
-  local c = Cell(idx,x,y,'floor','wall',ch, false)
+  local c = Cell(idx,x,y,nil,ch, false)
   return c
 end
+-- TODO: clean this up
 function DoorCell(code,idx,x,y)
   local ch = CELL_CHARS.door[code] or '+'
-  local c = Cell(idx,x,y,'floor','door',ch, true,{is_locked=false,cost=1.5})
+  local c = Cell(idx,x,y,nil,ch, true,{is_locked=false,cost=1.5})
+  c.device = Door(ship,c)
   return c
 end
 
@@ -125,8 +119,6 @@ function Ship:initialize(map)
         c = DoorCell(code,idx,x,y)
       elseif ch=='*' then
         c = AirlockCell(code,idx,x,y)
-      elseif ch=='.' then
-        c = SpaceCell(code,idx,x,y)
       else
         -- TODO: device emplacement
         c = EmptyCell(code,idx,x,y)
@@ -134,7 +126,7 @@ function Ship:initialize(map)
         if DEVICES[ch] then
           local d = DEVICES[ch](self,c)
           self.devices[#self.devices+1] = d
-          c.terrain = d
+          c.device = d
         end
       end
       self.cells[idx] = c
@@ -155,8 +147,9 @@ function Ship:initialize(map)
 
   self.devices_by_name = {}
   for _,d in ipairs(self.devices) do
-    if not self.devices_by_name[d.name] then self.devices_by_name[d.name] = {} end
-    local a = self.devices_by_name[d.name]
+    local n = d.class.name
+    if not self.devices_by_name[n] then self.devices_by_name[n] = {} end
+    local a = self.devices_by_name[n]
     a[#a+1] = d
   end
 end
@@ -187,17 +180,15 @@ end
 -- TODO: should use path-distance, not metric
 -- this will break if there is no path at all...
 -- (should probably compute "dijkstra maps" for all devices...
-function Ship:locate_device(name,x,y,unclaimed)
+function Ship:locate_device(name,x,y)
   local best_device = nil
   local best_dist = 1e10
   for i,d in ipairs(self.devices_by_name[name]) do
-    if not (unclaimed and d.claim) then
-      local c = d.cell
-      local dist = math.abs(c.x-x) + math.abs(c.y-y)
-      if dist < best_dist then
-        best_device = d
-        best_dist = dist
-      end
+    local c = d.cell
+    local dist = math.abs(c.x-x) + math.abs(c.y-y)
+    if dist < best_dist then
+      best_device = d
+      best_dist = dist
     end
   end
   return best_device
@@ -214,7 +205,10 @@ function Ship:idx(x,y)
 end
 
 function Ship:cell(x,y)
-  x,y = math.floor(x),math.floor(y)
+  local x,y = math.floor(x),math.floor(y)
+  if x<1 or x>self.x_size or y<1 or y>self.y_size then
+    return nil
+  end
   return self.cells[1 + (x-1) + (y-1)*self.x_size]
 end
 
@@ -242,26 +236,34 @@ function Ship:draw_map()
     for x=1,self.x_size do
       local cl = self:cell(x,y)
       local c = cl.char
-      if c=='.' then
-        love.graphics.setColor(0.1,0.1,0.1)
-      elseif cl.terrain=='wall' then
+      if cl.device=='wall' then
         love.graphics.setColor(0.5,0.5,0.5)
       elseif c=='*' then
         love.graphics.setColor(0.3,0.4,0.5)
-      elseif cl.terrain=='door' then
+      elseif cl.device=='door' then
         love.graphics.setColor(0.5,0.4,0.3)
       else
-        love.graphics.setColor(0.2,0.2,0.2)
+        love.graphics.setColor(0.7,0.7,0.8)
       end
       love.graphics.rectangle('fill', (x-1)*24, (y-1)*24, 24, 24)
 
       love.graphics.setColor(0.1,0.1,0.5,0.25)
       love.graphics.rectangle('line', (x-1)*24, (y-1)*24, 24, 24)
 
-      love.graphics.setColor(1,1,1)
-      love.graphics.print(c, FONT_1, 6+(x-1)*24, 4+(y-1)*24)
+      if cl.device and cl.device.draw then
+        love.graphics.push()
+          love.graphics.translate((x-1)*24, (y-1)*24)
+          cl.device:draw()
+        love.graphics.pop()
+      else
+        love.graphics.setColor(1,1,1,1)
+        love.graphics.print(c, FONT_1, 6+(x-1)*24, 4+(y-1)*24)
+      end
     end
   end
+
+  --love.graphics.setColor(0.2,0.3,0.4,0.8)
+  --love.graphics.rectangle('line',0.5,0.5, 24*19-1,24*19-1)
 end
 
 

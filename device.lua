@@ -23,21 +23,58 @@ function Device:initialize(name,char,ship,cell,inputs,outputs,decay,args)
   self.activated = false
   self.activation_time = 5.0 --default
   self.activation_elapsed = 0.0
-  self.claim = nil
+  self.owner = nil
   self.repair_job = nil
   self.operate_job = nil
+  self.animations = {
+    electronic = {
+      ELECTRONIC_ANIM[1]:clone({x=12,y=12}),
+      ELECTRONIC_ANIM[2]:clone({x=12,y=12}),
+      ELECTRONIC_ANIM[3]:clone({x=12,y=12}),
+    },
+  }
+  -- tile, electronic, mechanical, quantum
+  self.active_animations = {nil,nil,nil,nil}
+  self.tile = nil
   if args then for k,v in pairs(args) do self[k] = v end end
 end
 
+function Device:draw()
+  if not self.cell then print("Attempt to draw device with nil cell", self); return end
+  love.graphics.setColor(1,1,1,1)
+  if self.tile then
+    love.graphics.draw(self.tile)
+  else
+    love.graphics.print(self.char, FONT_1, 0,0)
+  end
+  for i=1,4 do
+    if self.active_animations[i] then
+      self.active_animations[i]:draw()
+    end
+  end
+end
+
+function Device:unclaim()
+  self.owner = nil
+end
+
+function Device:claim(agent)
+  if self.owner and self.owner~=agent then
+    return false
+  end
+  self.owner = agent
+  return true
+end
+
 function Device:start_operate(agent)
-  if self.claim~=agent then
-    print("ERROR: Device:start_operate() but self.claim~=agent",self,agent)
+  if self.owner~=agent then
+    print("ERROR: Device:start_operate() but self.owner~=agent",self,agent)
   end
   self.activation_elapsed = 0.0
 end
 function Device:operate(agent,dt)
-  if self.claim~=agent then
-    print("ERROR: Device:operate() but self.claim~=agent",self,agent)
+  if self.owner~=agent then
+    print("ERROR: Device:operate() but self.owner~=agent",self,agent)
   end
   -- TODO: skill
   self.activation_elapsed = self.activation_elapsed + dt
@@ -50,8 +87,8 @@ function Device:operate(agent,dt)
   end
 end
 function Device:stop_operate(agent)
-  if self.claim~=agent then
-    print("ERROR: Device:stop_operate() but self.claim~=agent",self,agent)
+  if self.owner~=agent then
+    print("ERROR: Device:stop_operate() but self.owner~=agent",self,agent)
   end
   self.activation_elapsed = 0.0
 end
@@ -78,9 +115,28 @@ function Device:slow_update(dt)
   else
     self.efficiency = math.min(1.0,math.ceil(self.total_health*16)/16)
   end
+
+  if self.active_animations[1] then
+    self.active_animations[1]:set_fps_scale(self.efficiency)
+  end
+
+  if self.health.electronic < 0.25 then
+    self.active_animations[2] = self.animations.electronic[3]
+  elseif self.health.electronic < 0.50 then
+    self.active_animations[2] = self.animations.electronic[2]
+  elseif self.health.electronic < 0.75 then
+    self.active_animations[2] = self.animations.electronic[1]
+  else
+    self.active_animations[2] = nil
+  end
 end
 
 function Device:update(dt)
+  for i=1,4 do
+    if self.active_animations[i] then
+      self.active_animations[i]:update(dt)
+    end
+  end
   if self.manned or self.activated then return end
   if not self.enabled then return end
   local t = 1.0
@@ -98,22 +154,27 @@ end
 ----------
 ReactorCore = class("ReactorCore", Device)
 function ReactorCore:initialize(ship,cell)
-  self.class.super.initialize(self,"ReactorCore",'R',ship,cell,{},{energy=1000,radiation=1/8},{1,4,8})
+  self.class.super.initialize(self,"Reactor Core",'R',ship,cell,{},{energy=1000,radiation=1/8},{1,4,8})
+  self.animations.tile = REACTOR_ANIM:clone({x=12,y=12})
+  self.active_animations[1] = self.animations.tile
+  self.health.electronic = 0.25
+  self.health.mechanical = 0.75
+  self.health.quantum = 0.75
 end
 ----------
 O2Reprocessor = class("O2Reprocessor", Device)
 function O2Reprocessor:initialize(ship,cell)
-  self.class.super.initialize(self,"O2Reprocessor",'O',ship,cell,{energy=10},{o2=32},{4,8,1})
+  self.class.super.initialize(self,"O2 Reprocessor",'O',ship,cell,{energy=10},{o2=32},{4,8,1})
 end
 ----------
 ShieldSystem = class("ShieldSystem", Device)
 function ShieldSystem:initialize(ship,cell)
-  self.class.super.initialize(self,"ShieldSystem",'s',ship,cell,{energy=100},{},{2,4,4})
+  self.class.super.initialize(self,"Shield System",'s',ship,cell,{energy=100},{},{2,4,4})
 end
 ----------
 ThermalRegulator = class("ThermalRegulator", Device)
 function ThermalRegulator:initialize(ship,cell)
-  self.class.super.initialize(self,"ThermalRegulator",'T',ship,cell,{energy=10},{temp=2}, {4,8,1})
+  self.class.super.initialize(self,"Thermal Regulator",'T',ship,cell,{energy=10},{temp=2}, {4,8,1})
   self.mode = 'heat'
 end
 function ThermalRegulator:slow_update(dt)
@@ -142,17 +203,17 @@ end
 ----------
 Co2Scrubber = class("Co2Scrubber", Device)
 function Co2Scrubber:initialize(ship,cell)
-  self.class.super.initialize(self,"Co2Scrubber",'S',ship,cell,{energy=10,co2=20},{o2=10}, {4,8,1})
+  self.class.super.initialize(self,"Co2 Scrubber",'S',ship,cell,{energy=10,co2=50},{o2=25}, {4,8,1})
 end
 ----------
 FoodSynthesizer = class("FoodSynthesizer", Device)
 function FoodSynthesizer:initialize(ship,cell)
-  self.class.super.initialize(self,"FoodSynthesizer",'F',ship,cell,{slurry=1},{food=1}, {4,8,1})
+  self.class.super.initialize(self,"Food Synthesizer",'F',ship,cell,{energy=10,slurry=1},{food=1}, {4,8,1})
 end
 ----------
 Toilet = class("Toilet", Device)
 function Toilet:initialize(ship,cell)
-  self.class.super.initialize(self,"Toilet",'t',ship,cell,{},{}, {2,16,1},{activated=true})
+  self.class.super.initialize(self,"Toilet",'t',ship,cell,{energy=1},{}, {2,16,1},{activated=true})
 end
 function Toilet:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
@@ -164,12 +225,23 @@ end
 ----------
 Bed = class("Bed", Device)
 function Bed:initialize(ship,cell)
-  self.class.super.initialize(self,"Bed",'b',ship,cell,{},{}, {1/8,1,1/256},{activated=true})
+  self.class.super.initialize(self,"Bed",'b',ship,cell,{energy=1},{}, {1/8,1,1/256},{activated=true,activation_time=10.0})
+  self.tile = BED_IMAGE
+end
+function Bed:operate(agent,dt)
+  local res = self.class.super.operate(self,agent,dt)
+  agent.level.rest = math.min(100, agent.level.rest + dt)
+  return res
+end
+----------
+Door = class("Door", Device)
+function Door:initialize(ship,cell)
+  self.class.super.initialize(self,"Door",'+',ship,cell,{energy=1},{}, {1/256,1/512,1/1024})
 end
 ----------
 Table = class("Table", Device)
 function Table:initialize(ship,cell)
-  self.class.super.initialize(self,"Table",'z',ship,cell,{},{}, {1/256,1/512,1/1024},{activated=true})
+  self.class.super.initialize(self,"Table",'z',ship,cell,{energy=1},{}, {1/512,1/256,1/1024},{activated=true})
 end
 function Table:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
@@ -181,7 +253,7 @@ end
 ----------
 NutrientDispenser = class("NutrientDispenser", Device)
 function NutrientDispenser:initialize(ship,cell)
-  self.class.super.initialize(self,"NutrientDispenser",'f',ship,cell,{},{}, {4,8,1},{activated=true})
+  self.class.super.initialize(self,"Nutrient Dispenser",'f',ship,cell,{energy=10},{}, {4,8,1},{activated=true})
 end
 function NutrientDispenser:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
@@ -193,7 +265,7 @@ end
 ----------
 MedicalBay = class("MedicalBay", Device)
 function MedicalBay:initialize(ship,cell)
-  self.class.super.initialize(self,"MedicalBay",'M',ship,cell,{},{}, {4,8,1},{activated=true})
+  self.class.super.initialize(self,"Medical Bay",'M',ship,cell,{energy=100},{}, {4,8,1},{activated=true})
   self.health.electronic = 0.5
   self.health.mechanical = 0.5
   self.health.quantum = 0.5
@@ -201,37 +273,37 @@ end
 ----------
 WasteReclamation = class("WasteReclamation", Device)
 function WasteReclamation:initialize(ship,cell)
-  self.class.super.initialize(self,"WasteReclamation",'W',ship,cell,{waste=1},{slurry=1/2}, {4,8,1})
+  self.class.super.initialize(self,"Waste Reclamation",'W',ship,cell,{energy=1,waste=1},{slurry=1/2}, {4,8,1})
 end
 ----------
 WeaponSystem = class("WeaponSystem", Device)
 function WeaponSystem:initialize(ship,cell)
-  self.class.super.initialize(self,"WeaponSystem",'w',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
+  self.class.super.initialize(self,"Weapon System",'w',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
 end
 ----------
 SensorSystem = class("SensorSystem", Device)
 function SensorSystem:initialize(ship,cell)
-  self.class.super.initialize(self,"SensorSystem",'e',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
+  self.class.super.initialize(self,"Sensor System",'e',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
 end
 ----------
 NavigationSystem = class("NavigationSystem", Device)
 function NavigationSystem:initialize(ship,cell)
-  self.class.super.initialize(self,"NavigationSystem",'n',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
+  self.class.super.initialize(self,"Navigation System",'n',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
 end
 ----------
 PropulsionSystem = class("PropulsionSystem", Device)
 function PropulsionSystem:initialize(ship,cell)
-  self.class.super.initialize(self,"PropulsionSystem",'p',ship,cell,{energy=10},{}, {2,4,4})
+  self.class.super.initialize(self,"Propulsion System",'p',ship,cell,{energy=10},{}, {2,4,4})
 end
 ----------
 CommunicationSystem = class("CommunicationSystem", Device)
 function CommunicationSystem:initialize(ship,cell)
-  self.class.super.initialize(self,"CommunicationSystem",'c',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
+  self.class.super.initialize(self,"Communication System",'c',ship,cell,{energy=10},{}, {2,4,4},{manned=true})
 end
 ----------
 FTLJumpSystem = class("FTLJumpSystem", Device)
 function FTLJumpSystem:initialize(ship,cell)
-  self.class.super.initialize(self,"FTLJumpSystem",'j',ship,cell,{energy=10},{}, {2,4,8},{manned=true})
+  self.class.super.initialize(self,"FTL Jump Drive",'j',ship,cell,{energy=10},{}, {2,4,8},{manned=true})
 end
 
 

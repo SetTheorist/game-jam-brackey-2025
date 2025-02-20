@@ -2,14 +2,14 @@
 
 Level = class("Level")
 
-function Level:initialize(name,value,min,max,decay)
+function Level:initialize(name,value,min,max,decay,history_len)
   self.name = name
   self.value = value
   self.min = min
   self.max = max
   self.decay = decay
   self.history = {}
-  for i=1,8 do self.history[i] = value end
+  for i=1,(history_len or 8) do self.history[i] = value end
   self.history_idx = 1
 end
 
