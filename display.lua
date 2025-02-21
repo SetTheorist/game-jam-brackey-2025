@@ -1,41 +1,136 @@
 
+UI = {
+  crew = {
+    eat = {},
+    sleep = {},
+    waste = {},
+    medical = {},
+  },
+  cell = {
+    repair = {},
+    man = {},
+  },
+}
+
+
+----------------------------------------
+local function draw_border(w,h)
+  love.graphics.setColor(0,0,0,0.5)
+  love.graphics.rectangle('fill', 1.5-3.0, 1.5-3.0, w+5, h+5)
+  love.graphics.setLineWidth(3)
+  love.graphics.setColor(0.7,0.7,0.9)
+  love.graphics.rectangle('line',1.5-3.0,1.5-3.0, w+3,h+3)
+  love.graphics.setColor(0.8,0.8,1)
+  love.graphics.rectangle('line',1.5-1.0,1.5-1.0, w+3,h+3)
+  love.graphics.setLineWidth(1)
+  love.graphics.setColor(1,1,1,1)
+end
+
+----------------------------------------
+function draw_messages_panel(the_messages)
+  draw_border(503,215)
+  love.graphics.setColor(0.9,0.9,0.9,1)
+  for i=1,17 do
+    if the_messages[i][1] then
+      love.graphics.print(the_messages[i][1], 1.5, 1.5+i*12-12)
+    end
+  end
+  for i=1,17 do
+    if the_messages[i][2] then
+      love.graphics.setColor(unpack(the_messages[i][3]))
+      love.graphics.print(the_messages[i][2], 1.5+8*8, 1.5+i*12-12)
+    end
+  end
+end
+
+----------------------------------------
+function draw_jobs_queue_panel(the_jobs)
+  draw_border(239,287)
+  for i,j in ipairs(the_jobs) do
+    if i==23 and #the_jobs>23 then
+      love.graphics.print(" . . . ", 1.5,1.5+12*i-12)
+    else
+      love.graphics.print(tostring(j), 1.5,1.5+12*i-12)
+    end
+    if i==23 then break end
+  end
+end
+
+----------------------------------------
+function draw_progress_panel(the_progress)
+  draw_border(503,215)
+
+  love.graphics.draw(TILES[NODES.dagon_fomalhaut.tile], 2.5,2.5)
+  love.graphics.draw(TILES[NODES.asteroid_belt.tile], 216,216-72-2.5)
+  love.graphics.draw(TILES[NODES.earth.tile], 504.5-72, 2.5)
+
+  love.graphics.setColor(0.2,0.8,0.9,0.5)
+  love.graphics.circle('fill', 
+    NODES.dagon_fomalhaut.start_position[1]*24-12, NODES.dagon_fomalhaut.start_position[2]*24-12,
+    5)
+  love.graphics.circle('fill', 
+    NODES.asteroid_belt.start_position[1]*24-12, NODES.asteroid_belt.start_position[2]*24-12,
+    5)
+  love.graphics.circle('fill', 
+    NODES.earth.start_position[1]*24-12, NODES.earth.start_position[2]*24-12,
+    5)
+  love.graphics.circle('fill', 
+    NODES.earth.end_position[1]*24-12, NODES.earth.end_position[2]*24-12,
+    5)
+  love.graphics.setLineWidth(3)
+  love.graphics.line(
+    NODES.dagon_fomalhaut.start_position[1]*24-12, NODES.dagon_fomalhaut.start_position[2]*24-12,
+    NODES.asteroid_belt.start_position[1]*24-12, NODES.asteroid_belt.start_position[2]*24-12,
+    NODES.earth.start_position[1]*24-12, NODES.earth.start_position[2]*24-12,
+    NODES.earth.end_position[1]*24-12, NODES.earth.end_position[2]*24-12)
+  love.graphics.setLineWidth(1)
+
+  love.graphics.setColor(0.9,0.8,1,1)
+  local cn = the_progress.current_node
+  local ep = the_progress.elapsed_progress
+  local x = cn.start_position[1] + ep*cn.dir[1]
+  local y = cn.start_position[2] + ep*cn.dir[2]
+  love.graphics.circle('fill', x*24-12, y*24-12, 5)
+
+  love.graphics.printf(cn.name,        FONTS.torek, 144,  2.5, 216, 'center')
+  love.graphics.printf(cn.description,              144, 24,   216, 'center')
+end
+
 ----------------------------------------
 function draw_crew_panel(crew)
-  love.graphics.setColor(1,1,1)
-  love.graphics.rectangle('line',0.5,0.5, 199,199)
+  draw_border(239,287)
 
   if not crew then return end
 
   love.graphics.setColor(crew.color[1],crew.color[2],crew.color[3],1.0)
-  --love.graphics.print(tostring(crew),1.5,1.5)
-  love.graphics.print(crew.name,1.5,1.5)
+  love.graphics.print(crew.name,2.5,1.5)
 
   love.graphics.setColor(1,1,1,1)
-  love.graphics.print(string.format("Health:%3i", crew.level.health), 1.5,23.5)
-  love.graphics.print(string.format("Food:%3i",   crew.level.food),   1.5,35.5)
-  love.graphics.print(string.format("Rest:%3i",   crew.level.rest),   1.5,47.5)
-  love.graphics.print(string.format("Waste:%3i",  crew.level.waste),  1.5,59.5)
-  love.graphics.print(string.format("Stress:%3i", crew.level.stress), 1.5,71.5)
-  love.graphics.print(string.format("O2:%3i",     crew.level.o2),     1.5,83.5)
+  love.graphics.print(string.format("Health:%3i", crew.level.health), 2.5,23.5)
+  love.graphics.print(string.format("Food:%3i",   crew.level.food),   2.5,35.5)
+  love.graphics.print(string.format("Rest:%3i",   crew.level.rest),   2.5,47.5)
+  love.graphics.print(string.format("Waste:%3i",  crew.level.waste),  2.5,59.5)
+  love.graphics.print(string.format("Stress:%3i", crew.level.stress), 2.5,71.5)
+  love.graphics.print(string.format("O2:%3i",     crew.level.o2),     2.5,83.5)
 
   if crew.current_action then
-    love.graphics.print(tostring(crew.current_action), 1.5,107.5)
+    love.graphics.setColor(0,1,0.5,1)
+    love.graphics.print(tostring(crew.current_action), 2.5,107.5)
+    love.graphics.setColor(1,1,1,1)
   end
-  for i,a in ipairs(crew.action_stack) do
-    love.graphics.print(tostring(a), 1.5,107.5+12+12*i)
+  local n = #crew.action_stack
+  for i=1,n do
+    love.graphics.print(tostring(crew.action_stack[n-i+1]), 2.5,107.5+12*i)
   end
 
-  -- TODO: actual UI buttons, etc.
-  love.graphics.print("<EAT>",  10.5,199.5-20)
-  love.graphics.print("<SLP>",  50.5,199.5-20)
-  love.graphics.print("<WAS>",  90.5,199.5-20)
-  love.graphics.print("<MED>", 130.5,199.5-20)
+  -- UI buttons for: eat/sleep/waste/medical
 end
 
 ----------------------------------------
 function draw_ship_stats_panel(ship)
+  draw_border(239,287)
+
   love.graphics.setColor(1,1,1)
-  love.graphics.rectangle('line',0.5,0.5, 199,199)
   love.graphics.print(string.format("co2:%3i", ship.level.co2.value), 1.5,1.5)
   love.graphics.print(string.format("energy:%3i", ship.level.energy.value), 1.5,13.5)
   love.graphics.print(string.format("o2:%3i", ship.level.o2.value), 1.5,25.5)
@@ -44,12 +139,24 @@ function draw_ship_stats_panel(ship)
   love.graphics.print(string.format("slurry:%3i", ship.level.slurry.value), 1.5,61.5)
   love.graphics.print(string.format("temp:%3i", ship.level.temp.value), 1.5,73.5)
   love.graphics.print(string.format("waste:%3i", ship.level.waste.value), 1.5,85.5)
+
+  love.graphics.print(string.format("sensor_data:%3i", ship.level.sensor_data.value), 1.5,97.5)
+  love.graphics.print(string.format("navigation_data:%3i", ship.level.navigation_data.value), 1.5,109.5)
+
+  love.graphics.print(string.format("propulsion_power:%3i", ship.level.propulsion_power.value), 1.5,121.5)
+  love.graphics.print(string.format("shield_power:%3i", ship.level.shield_power.value), 1.5,133.5)
+  love.graphics.print(string.format("weapons_power:%3i", ship.level.weapons_power.value), 1.5,145.5)
+
+  love.graphics.print(string.format("defence_command:%3i", ship.level.defence_command.value), 1.5,157.5)
+  love.graphics.print(string.format("flight_command:%3i", ship.level.flight_command.value), 1.5,169.5)
+  love.graphics.print(string.format("ftl_command:%3i", ship.level.ftl_command.value), 1.5,181.5)
 end
 
 ----------------------------------------
 function draw_ship_map_panel(ship,chosen_cell,chosen_crew)
   love.graphics.setColor(1,1,1,1)
   love.graphics.draw(IMAGES.ship_frame,0-24,0-24) -- XXX - using 0.5 here gives aliasing
+
   ship:draw_map()
   love.graphics.setColor(1,1,1,1)
   for i,c in ipairs(ship.the_crew) do
@@ -68,21 +175,35 @@ end
 
 ----------------------------------------
 function draw_cell_panel(cell)
-  love.graphics.setColor(1,1,1)
-  love.graphics.rectangle('line',0.5,0.5, 199,199)
+  draw_border(239,287)
 
   if not cell then return end
+  love.graphics.setColor(1,1,1)
   love.graphics.print(string.format("%02i-%02i",cell.x,cell.y), 1.5,1.5)
-  love.graphics.print(cell.char, 199.5-12,1.5)
+  --love.graphics.print(cell.char, 199.5-12,1.5)
 
   local d = cell.device
   if not d then return end
 
-  love.graphics.print(d.name, 1.5,13.5)
-  if d.enabled   then love.graphics.print('e', 199.5-12*3,13.5) end
+  if not d.enabled then
+    love.graphics.setColor(1,0.25,0.5)
+    love.graphics.print(d.name, 1.5,13.5)
+    love.graphics.setColor(1,1,1)
+  else
+    love.graphics.print(d.name, 1.5,13.5)
+  end
   if d.activated then love.graphics.print('a', 199.5-12*2,13.5) end
   if d.manned    then love.graphics.print('m', 199.5-12*1,13.5) end
+
+  if d.efficiency<0.25 then
+    love.graphics.setColor(1,0.25,0.5)
+  elseif d.efficiency<0.50 then
+    love.graphics.setColor(1,0.5,0.5)
+  elseif d.efficiency<0.75 then
+    love.graphics.setColor(1,1,0.5)
+  end
   love.graphics.print(string.format("Efficiency:%3i", (d.efficiency*100)), 1.5,25.5)
+  love.graphics.setColor(1,1,1)
 
   if d.owner then
     love.graphics.print(d.owner, 13.5,13.5)
@@ -115,21 +236,24 @@ function draw_cell_panel(cell)
     i = i + 12
   end
 
-  -- TODO: actual UI buttons, etc.
-  if not d.repair_job then
-    love.graphics.setColor(1,1,1)
+  -- TODO: proper UI
+  if d.repair_job then
+    love.graphics.setColor(0.9,1,0.9)
+    love.graphics.draw(IMAGES.button_repair.down, 2, 288-48-1)
   else
-    love.graphics.setColor(1,1,0)
-  end
-  love.graphics.print("<REP>",  10.5,199.5-20)
-
-  if d.enabled and d.manned then
     love.graphics.setColor(1,1,1)
-  else
-    love.graphics.setColor(0.5,0.5,0.6)
+    love.graphics.draw(IMAGES.button_repair.up, 2, 288-48-1)
   end
-  love.graphics.print("<MAN>", 60.5,199.5-20)
-
+  if d.operate_job then
+    love.graphics.setColor(0.9,1,0.9)
+    love.graphics.draw(IMAGES.button_operate.down, 240-120, 288-48-1)
+  elseif d.manned and d.enabled then
+    love.graphics.setColor(1,1,1)
+    love.graphics.draw(IMAGES.button_operate.up, 240-120, 288-48-1)
+  else
+    love.graphics.setColor(0.5,0.5,0.5)
+    love.graphics.draw(IMAGES.button_operate.up, 240-120, 288-48-1)
+  end
 end
 
 

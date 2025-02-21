@@ -1,52 +1,43 @@
 
+local SQ2 = math.sqrt(2)
+local ISQ2 = math.sqrt(0.5)
 
-local start_node = 'omicron_persei_8'
-local end_node = 'earth'
-current_node = 'omicron_persei_8'
-current_progress = 0
-
-local nodes = {
-  omicron_persei_8 = {
-    name="Omicron Persei",
+NODES = {
+  dagon_fomalhaut = {
+    name="Dagon Fomalhaut A",
     description="A ghastly planetary system",
     events={},
-    image='',
-    next={asteroid_belt=2,
-          long_way=2},
+    tile='planet_dagon',
+    next='asteroid_belt',
+    time=8.5,
+    start_position={2,2},
+    end_position={8,8},
+    dir={ISQ2,ISQ2},
   },
   asteroid_belt = {
     name="Asteroid belt",
-    description="",
+    description="A region of space filled with rocky and metallic space debris",
     events={'asteroid_storm'},
-    image='',
-    next={midway=2},
-  },
-  long_way = {
-    name="long_way",
-    description="",
-    events={},
-    image='',
-    next={long_way_2=3},
-  },
-  long_way_2 = {
-    name="long_way_2",
-    description="",
-    events={},
-    image='',
-    next={midway=3},
-  },
-  midway = {
-    name="Midway",
-    description="",
-    events={},
-    image='',
-    next={earth=2},
+    tile='planet_asteroids',
+    next='earth',
+    time=6,
+    start_position={8,8},
+    end_position={14,8},
+    dir={1.0,0.0},
   },
   earth = {
     name="Earth",
-    description="Your final destination.",
+    description="Your final destination",
     events={},
-    image='',
+    tile='planet_earth',
     next={},
+    time=8.5,
+    start_position={14,8},
+    end_position={20,2},
+    dir={ISQ2,-ISQ2},
   },
 }
+
+START_NODE = NODES.dagon_fomalhaut
+FINAL_NODE = NODES.earth
+

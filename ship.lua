@@ -80,7 +80,7 @@ CODE_TO_DEVICE = {
   D=DefenseConsole,
   E=SensorSystem,
   F=FoodSynthesizer,
-  J=FTLJumpDrive,
+  J=FTLDrive,
   L=WasteReclamation,
   m=MedicalBay,
   N=NavigationSystem,
@@ -92,7 +92,7 @@ CODE_TO_DEVICE = {
   T=ThermalRegulator,
   t=Toilet,
   W=WeaponsSystem,
-  Z=FTLJumpConsole,
+  Z=FTLConsole,
 }
 
 -- TODO: wall images by code
@@ -126,6 +126,21 @@ function Cell:initialize(idx,x,y,device,char,args)
   self.idx = idx
   self.x = x
   self.y = y
+  self.items = {}
+  self.decorations = {}
+  --[[
+  -- TODO: "decorations"
+  if not device then
+    local r = love.math.random()
+    if r < 0.01 then
+      self.decorations[1] = {TILES.decoration_1, love.math.random(9)-4,love.math.random(9)-4}
+    elseif r < 0.02 then
+      self.decorations[1] = {TILES.decoration_2, love.math.random(9)-4,love.math.random(9)-4}
+    elseif r < 0.03 then
+      self.decorations[1] = {TILES.decoration_3, love.math.random(9)-4,love.math.random(9)-4}
+    end
+  end
+  --]]
   if args then for k,v in pairs(args) do self[k]=v end end
 end
 function Cell:__tostring()
@@ -209,6 +224,7 @@ function Ship:setup_map()
 end
 
 function Ship:initialize()
+  self.jobs_list = {}
 
   self.level = {
     co2=Level('co2',50.0, 0,1000, 0),
@@ -229,7 +245,7 @@ function Ship:initialize()
 
     defence_command=Level('defence_command',0.0, 0,1000, 0),
     flight_command=Level('flight_command',0.0, 0,1000, 0),
-    ftl_jump_command=Level('ftl_jump_command',0.0, 0,1000, 0),
+    ftl_command=Level('ftl_command',0.0, 0,1000, 0),
 
     --[[
     hull_integrity
@@ -247,6 +263,17 @@ function Ship:setup_crew()
     c[#c+1] = Crew(n,self)
   end
   self.the_crew = c
+end
+
+function Ship:add_job(j)
+  local jl = self.jobs_list
+  for i=1,#jl do
+    if jl[i].priority > j.priority then
+      table.insert(jl, i, j)
+      return
+    end
+  end
+  self.jobs_list[#self.jobs_list+1] = j
 end
 
 function Ship:path(c0,c1)
@@ -328,47 +355,81 @@ function Ship:slow_update(dt)
 end
 
 function Ship:draw_map()
+  local function draw_tile(cl)
+    love.graphics.setColor(0.7,0.7,0.8)
+    love.graphics.rectangle('fill', 0, 0, 24, 24)
+    --love.graphics.setColor(0.1,0.1,0.5,0.25)
+    --love.graphics.rectangle('line', 0, 0, 24, 24)
+    -- walls
+    love.graphics.setLineWidth(3)
+    local OFFSET=1.5
+    love.graphics.setColor(0.6,0.5,0.7,1)
+    if cl.walls[1] then love.graphics.line(24-OFFSET,0,24-OFFSET,24) end
+    if cl.walls[4] then love.graphics.line(0,24-OFFSET,24,24-OFFSET) end
+    love.graphics.setColor(0.5,0.4,0.5,1)
+    if cl.walls[3] then love.graphics.line(0+OFFSET,0,0+OFFSET,24) end
+    if cl.walls[2] then love.graphics.line(0,0+OFFSET,24,0+OFFSET) end
+    -- doors
+    love.graphics.setLineWidth(2)
+    love.graphics.setColor(0.4,0.7,0.5,1)
+    local OFFSET=1
+    if cl.walls[5] then love.graphics.line(24-OFFSET,0,24-OFFSET,24) end
+    if cl.walls[8] then love.graphics.line(0,24-OFFSET,24,24-OFFSET) end
+    if cl.walls[7] then love.graphics.line(0+OFFSET,0,0+OFFSET,24) end
+    if cl.walls[6] then love.graphics.line(0,0+OFFSET,24,0+OFFSET) end
+    --
+    love.graphics.setColor(1,1,1,1)
+    love.graphics.setLineWidth(1)
+  end
+  local function draw_decorations(cl)
+    for _,d in ipairs(cl.decorations) do
+      love.graphics.draw(d[1], d[2], d[3])
+    end
+  end
+  local function draw_device(cl)
+    if cl.device and cl.device.draw then
+      cl.device:draw()
+    else
+      local c = cl.char
+      love.graphics.print(c, FONT_1, 6, 4)
+    end
+  end
+  local function draw_items(cl)
+    for _,d in ipairs(cl.items) do
+      love.graphics.draw(d[1], d[2], d[3])
+    end
+  end
+
   for y=1,self.y_size do
     for x=1,self.x_size do
-      local cl = self:cell(x,y)
-
-      love.graphics.setColor(0.7,0.7,0.8)
-      love.graphics.rectangle('fill', (x-1)*24, (y-1)*24, 24, 24)
-
-      love.graphics.setColor(0.1,0.1,0.5,0.25)
-      love.graphics.rectangle('line', (x-1)*24, (y-1)*24, 24, 24)
-
-      -- walls
-      love.graphics.setLineWidth(3)
-      local OFFSET=1.5
-      love.graphics.setColor(0.6,0.5,0.7,1)
-      if cl.walls[1] then love.graphics.line(x*24-OFFSET,(y-1)*24,x*24-OFFSET,y*24) end
-      if cl.walls[4] then love.graphics.line((x-1)*24,y*24-OFFSET,x*24,y*24-OFFSET) end
-      love.graphics.setColor(0.5,0.4,0.5,1)
-      if cl.walls[3] then love.graphics.line((x-1)*24+OFFSET,(y-1)*24,(x-1)*24+OFFSET,y*24) end
-      if cl.walls[2] then love.graphics.line((x-1)*24,(y-1)*24+OFFSET,x*24,(y-1)*24+OFFSET) end
-      -- doors
-      love.graphics.setLineWidth(2)
-      love.graphics.setColor(0.4,0.7,0.5,1)
-      local OFFSET=1
-      if cl.walls[5] then love.graphics.line(x*24-OFFSET,(y-1)*24,x*24-OFFSET,y*24) end
-      if cl.walls[8] then love.graphics.line((x-1)*24,y*24-OFFSET,x*24,y*24-OFFSET) end
-      if cl.walls[7] then love.graphics.line((x-1)*24+OFFSET,(y-1)*24,(x-1)*24+OFFSET,y*24) end
-      if cl.walls[6] then love.graphics.line((x-1)*24,(y-1)*24+OFFSET,x*24,(y-1)*24+OFFSET) end
-      --
-      love.graphics.setColor(1,1,1,1)
-      love.graphics.setLineWidth(1)
-
-      if cl.device and cl.device.draw then
-        love.graphics.push()
-          love.graphics.translate((x-1)*24, (y-1)*24)
-          cl.device:draw()
-        love.graphics.pop()
-      else
-        local c = cl.char
-        love.graphics.setColor(1,1,1,1)
-        love.graphics.print(c, FONT_1, 6+(x-1)*24, 4+(y-1)*24)
-      end
+      love.graphics.push()
+        love.graphics.translate((x-1)*24, (y-1)*24)
+        draw_tile(self:cell(x,y))
+      love.graphics.pop()
+    end
+  end
+  for y=1,self.y_size do
+    for x=1,self.x_size do
+      love.graphics.push()
+        love.graphics.translate((x-1)*24, (y-1)*24)
+        draw_decorations(self:cell(x,y))
+      love.graphics.pop()
+    end
+  end
+  for y=1,self.y_size do
+    for x=1,self.x_size do
+      love.graphics.push()
+        love.graphics.translate((x-1)*24, (y-1)*24)
+        draw_device(self:cell(x,y))
+      love.graphics.pop()
+    end
+  end
+  for y=1,self.y_size do
+    for x=1,self.x_size do
+      love.graphics.push()
+        love.graphics.translate((x-1)*24, (y-1)*24)
+        draw_items(self:cell(x,y))
+      love.graphics.pop()
     end
   end
 

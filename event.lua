@@ -3,10 +3,12 @@ local class = class or require "middleclass"
 --------------------------------------------------------------------------------
 local EventManager = class("EventManager")
 
+----------
 function EventManager:initialize()
   self.handlers = {}
 end
 
+----------
 function EventManager:emit(event,...)
   if not self.handlers[event] then return end
   for _,h in ipairs(self.handlers[event]) do
@@ -18,6 +20,7 @@ function EventManager:emit(event,...)
   end
 end
 
+----------
 -- arg is optional first argument to handler
 function EventManager:on(event,id,handler,arg)
   if not self.handlers[event] then self.handlers[event] = {} end
@@ -29,6 +32,7 @@ function EventManager:on(event,id,handler,arg)
   end
 end
 
+----------
 -- removes ALL watchers with matching id
 function EventManager:remove(event,id)
   local a = self.handlers[event]
@@ -39,7 +43,6 @@ function EventManager:remove(event,id)
   end
 end
 
---------------------------------------------------------------------------------
-
 return EventManager
+--------------------------------------------------------------------------------
 

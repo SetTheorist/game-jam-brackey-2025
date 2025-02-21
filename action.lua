@@ -140,6 +140,14 @@ function OperateJob:initialize(priority,min_skills,device)
   device.operate_job = self
 end
 
+function OperateJob:__tostring()
+  return string.format("Operate[%i:%s]", self.priority, self.device.name)
+end
+
+function OperateJob:finish()
+  self.device.operate_job = nil
+end
+
 function OperateJob:actions()
   local o = self.owner
   return {
@@ -157,6 +165,10 @@ function RepairJob:initialize(priority,min_skills,device)
   end
   self.class.super.initialize(self,"repair",priority,min_skills,{device=device})
   device.repair_job = self
+end
+
+function RepairJob:__tostring()
+  return string.format("Repair[%i:%s]", self.priority, self.device.name)
 end
 
 function RepairJob:finish()
@@ -189,7 +201,7 @@ function Action:execute(dt) return 'done' end
 
 -- book-keeping action
 StartJobAction = class("StartJobAction", Action)
-function StartJobAction:__tostring() return "StartJobAction" end
+function StartJobAction:__tostring() return "Start" end
 function StartJobAction:start()
   if self.job then
     self.job:start()
@@ -200,7 +212,7 @@ end
 
 -- book-keeping action
 FinishJobAction = class("FinishJobAction", Action)
-function FinishJobAction:__tostring() return "FinishJobAction" end
+function FinishJobAction:__tostring() return "Finish" end
 function FinishJobAction:start()
   if self.job then
     self.job:finish()
@@ -213,7 +225,7 @@ end
 WaitAction = class("WaitAction", Action)
 
 function WaitAction:__tostring()
-  return string.format("WaitAction(%.01f/%.01f)", self.elapsed, self.time)
+  return string.format("Wait(%.01f/%.01f)", self.elapsed, self.time)
 end
 
 function WaitAction:initialize(job,agent,time)
@@ -241,7 +253,7 @@ end
 WalkAction = class("WalkAction", Action)
 
 function WalkAction:__tostring()
-  return string.format("WalkAction(%s)",self.target_cell)
+  return string.format("Walk(%s)",self.target_cell)
 end
 
 function WalkAction:initialize(job,agent,target_cell)
@@ -294,7 +306,7 @@ end
 RepairAction = class("RepairAction", Action)
 
 function RepairAction:__tostring()
-  return string.format("RepairAction(%s:%.1f/%.1f)",self.device, self.elapsed, self.time)
+  return string.format("Repair(%s:%.1f/%.1f)",self.device.name, self.elapsed, self.time)
 end
 
 function RepairAction:initialize(job,agent,device,time)
@@ -353,6 +365,11 @@ function OperateAction:initialize(job,agent,device,time)
   self.class.super.initialize(self,job,agent)
   self.device = device
   self.elapsed = 0
+  self.time = time
+end
+
+function OperateAction:__tostring()
+  return string.format("Operate(%s:%.1f/%.1f)",self.device.name, self.elapsed, self.time)
 end
 
 function OperateAction:start()

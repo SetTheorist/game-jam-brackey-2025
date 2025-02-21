@@ -3,28 +3,6 @@ local class = class or require "middleclass"
 
 Crew = class("Crew")
 
---[[
-STATES:
-  idle
-  walk
-  repair
-  operate
-  sleep
-  eat?
---]]
-
---[[
-EFFECTS:
-  respiration
-  digestion
-  stress
-  healing
-  sleep
-  insanity
-  fire
-  radiation
---]]
-
 function Crew:initialize(name,ship)
   self.ship = ship
   self.skills = {
@@ -46,14 +24,14 @@ function Crew:initialize(name,ship)
   self.level = {
     health=100-20*love.math.random(64)/64,
     food=10+50*love.math.random(64)/64,
-    o2=120,
+    o2=120-20*love.math.random(64)/64,
     waste=1+10*love.math.random(64)/64,
     rest=100-50*love.math.random(64)/64,
     stress=10,
     }
   self.name = name
-  self.walk_speed = 2.0 + 3.0*math.floor(love.math.random()*64)/64
-  self.work_speed = 1/2 + math.floor(love.math.random()*64)/64*(3/4)
+  self.walk_speed = 3.0 + 2.0*love.math.random(64)/64
+  self.work_speed = 1/2 + love.math.random(64)/64
   self.color = {0.5+love.math.random()*0.5,0.5+love.math.random()*0.5,0.5+love.math.random()*0.5}
   self.color[love.math.random(3)] = 0.0
   self.animations = {
@@ -105,6 +83,10 @@ function Crew:die()
     self.current_action:finish()
     self.current_action = nil
     self.job_stack = {}
+  end
+  local c = self.ship:cell(self.location.x,self.location.y)
+  if c then
+    c.items[#c.items+1] = {TILES.corpse,love.math.random(25)-12,love.math.random(25)-12}
   end
   EVENT_MANAGER:emit('crew_death', self)
 end
@@ -179,10 +161,10 @@ function Crew:new_action()
     return
   end
 
-  if #the_jobs > 0 then
-    local j = the_jobs[#the_jobs]
+  if #self.ship.jobs_list > 0 then
+    local j = self.ship.jobs_list[1]
     if j:check_skills(self) then
-      the_jobs[#the_jobs] = nil
+      table.remove(self.ship.jobs_list,1)
       if not self:claim_job(j) then
         print("ERROR: failure to claim job", self, j)
         -- TODO!
@@ -215,34 +197,41 @@ function Crew:update(dt)
   compact(self.effects, n)
 
   -- metabolism
-  -- TODO: replenish o2 if <max
   -- TODO: incorporate co2 levels somehow
-  local do2 = self.ship.level.o2:sub(2*dt)
-  self.level.o2 = self.level.o2 - (2*dt - do2)
-  self.ship.level.co2:add(2*dt)
-  self.ship.level.temp:add(dt/16)
+  local do2 = self.ship.level.o2:sub(dt)
+  local missing = dt - do2
+  if missing == 0 then
+    if self.level.o2 < 120 then
+      local xdo2 = self.ship.level.o2:sub(math.min(dt,(120-self.level.o2)/2))
+      self.level.o2 = self.level.o2 + xdo2
+    end
+  else
+    self.level.o2 = self.level.o2 - missing
+  end
+  self.ship.level.co2:add(dt/4)
+  self.ship.level.temp:add(dt)
 
-  self.level.health = math.min(100.0, self.level.health + dt*1/64)
-  self.level.food = math.min(100.0, self.level.food - dt*1/64)
-  self.level.rest = math.min(100.0, self.level.rest - dt*1/64)
-  self.level.waste = math.min(200.0, self.level.waste + dt*1/128)
+  self.level.health = math.min(100.0, self.level.health + dt/32)
+  self.level.waste = math.min(64.0, self.level.waste + dt/4/4)
+  self.level.food = math.max(0, self.level.food - dt/4)
+  self.level.rest = math.max(0, self.level.rest - dt/4)
 
   if love.math.random() < (1.0-self.skills.zen)*dt then
     self.level.stress = math.min(1000.0, self.level.stress + love.math.random())
   end
   
-  if self.level.waste>100 then
-    if love.math.random()*100 < self.level.waste-100 then
+  if self.level.waste>32 then
+    if love.math.random()*32 < self.level.waste-32 then
       self.level.health = math.max(0.0, self.level.health - dt)
     end
   end
-  if self.level.food<10 then
-    if love.math.random()*100 < (10-self.level.food) then
+  if self.level.food<8 then
+    if love.math.random()*32 < (8-self.level.food) then
       self.level.health = math.max(0.0, self.level.health - dt)
     end
   end
   if self.level.o2<1 then
-    self.level.health = math.max(0.0, self.level.health - dt)
+    self.level.health = math.max(0.0, self.level.health - dt*8)
   end
   -- TODO: stress
 
