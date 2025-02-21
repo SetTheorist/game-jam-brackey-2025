@@ -62,7 +62,7 @@ function Anim:update(dt)
 end
 
 function Anim:draw()
-  love.graphics.setColor(1,1,1,1)
+  --love.graphics.setColor(1,1,1,1)
   love.graphics.draw(self.image, self.quads[self.frame+1],
     self.x, self.y, self.rotation, 1, 1, self.frame_w/2, self.frame_h/2)
 end

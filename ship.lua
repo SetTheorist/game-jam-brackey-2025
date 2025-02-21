@@ -1,4 +1,3 @@
-
 local class = class or require "middleclass"
 local path = path or require "path"
 
@@ -92,26 +91,26 @@ CODE_TO_DEVICE = {
   S=ShieldSystem,
   T=ThermalRegulator,
   t=Toilet,
-  W=WeaponSystem,
+  W=WeaponsSystem,
   Z=FTLJumpConsole,
 }
 
 -- TODO: wall images by code
--- >^<v (ruld)
+-- >^<v (ruld)  (wall then door)
 CODE_TO_WALLS = {
-  ['.'] = {false,false,false,false},
-  q={false,true ,true ,false},
-  w={true ,true ,false,false},
-  a={false,false,true ,true },
-  s={true ,false,false,true },
-  l={false,false,true ,false},
-  r={true ,false,false,false},
-  u={false,true ,false,false},
-  d={false,false,false,true },
-  L={false,false,false,false}, -- door handled differently
-  R={false,false,false,false}, -- door handled differently
-  U={false,false,false,false}, -- door handled differently
-  D={false,false,false,false}, -- door handled differently
+  ['.'] = {false,false,false,false, false,false,false,false},
+  q={false,true ,true ,false, false,false,false,false},
+  w={true ,true ,false,false, false,false,false,false},
+  a={false,false,true ,true , false,false,false,false},
+  s={true ,false,false,true , false,false,false,false},
+  l={false,false,true ,false, false,false,false,false},
+  r={true ,false,false,false, false,false,false,false},
+  u={false,true ,false,false, false,false,false,false},
+  d={false,false,false,true , false,false,false,false},
+  L={false,false,false,false, false,false,true ,false},
+  R={false,false,false,false, true ,false,false,false},
+  U={false,false,false,false, false,true ,false,false},
+  D={false,false,false,false, false,false,false,true },
 }
 
 --------------------------------------------------------------------------------
@@ -189,6 +188,7 @@ function Ship:setup_map()
     a[#a+1] = d
   end
 
+  --[[
   print('----------')
   for y=1,MAP_X do
     for x=1,MAP_X do
@@ -205,9 +205,11 @@ function Ship:setup_map()
     end
     print()
   end
+  --]]
 end
 
 function Ship:initialize()
+
   self.level = {
     co2=Level('co2',50.0, 0,1000, 0),
     energy=Level('energy',500.0, 0,1000, 0),
@@ -217,18 +219,34 @@ function Ship:initialize()
     slurry=Level('slurry',200.0, 0,1000, 0),
     temp=Level('temp',98.0, 0,1000, 0),
     waste=Level('waste',10.0, 0,1000, 0),
+
+    sensor_data=Level('sensor_data',10.0, 0,1000, 0),
+    navigation_data=Level('navigation_data',10.0, 0,1000, 0),
+
+    shield_power=Level('shield_power',100.0, 0,1000, 0),
+    weapons_power=Level('weapons_power',100.0, 0,1000, 0),
+    propulsion_power=Level('propulsion_power',0.0, 0,1000, 0),
+
+    defence_command=Level('defence_command',0.0, 0,1000, 0),
+    flight_command=Level('flight_command',0.0, 0,1000, 0),
+    ftl_jump_command=Level('ftl_jump_command',0.0, 0,1000, 0),
+
     --[[
     hull_integrity
-    navigation_data
-    sensor_data
-    communications_data
-    shield_power
-    weapon_power
-    propulsion_power
     --]]
     }
 
   self:setup_map()
+  self:setup_crew()
+end
+
+function Ship:setup_crew()
+  local c = {}
+  -- TODO: only 1 crew and the rest in cryopods...
+  for i,n in ipairs({'pat','chris','terry','dana','francis','jean','jo','jordan','cameron','casey','kelly','ollie'}) do
+    c[#c+1] = Crew(n,self)
+  end
+  self.the_crew = c
 end
 
 function Ship:path(c0,c1)
@@ -263,6 +281,7 @@ function Ship:locate_device(name,x,y)
   for i,d in ipairs(self.devices_by_name[name]) do
     local c = d.cell
     local dist = math.abs(c.x-x) + math.abs(c.y-y)
+    if d.owner then dist = dist + 5 end -- prefer unowned
     if dist < best_dist then
       best_device = d
       best_dist = dist
@@ -319,23 +338,25 @@ function Ship:draw_map()
       love.graphics.setColor(0.1,0.1,0.5,0.25)
       love.graphics.rectangle('line', (x-1)*24, (y-1)*24, 24, 24)
 
+      -- walls
+      love.graphics.setLineWidth(3)
+      local OFFSET=1.5
+      love.graphics.setColor(0.6,0.5,0.7,1)
+      if cl.walls[1] then love.graphics.line(x*24-OFFSET,(y-1)*24,x*24-OFFSET,y*24) end
+      if cl.walls[4] then love.graphics.line((x-1)*24,y*24-OFFSET,x*24,y*24-OFFSET) end
+      love.graphics.setColor(0.5,0.4,0.5,1)
+      if cl.walls[3] then love.graphics.line((x-1)*24+OFFSET,(y-1)*24,(x-1)*24+OFFSET,y*24) end
+      if cl.walls[2] then love.graphics.line((x-1)*24,(y-1)*24+OFFSET,x*24,(y-1)*24+OFFSET) end
+      -- doors
       love.graphics.setLineWidth(2)
-      if cl.walls[1] then
-        love.graphics.setColor(0.6,0.5,0.7,1)
-        love.graphics.line(x*24-1,(y-1)*24,x*24-1,y*24)
-      end
-      if cl.walls[4] then
-        love.graphics.setColor(0.6,0.5,0.7,1)
-        love.graphics.line((x-1)*24,y*24-1,x*24,y*24-1)
-      end
-      if cl.walls[3] then
-        love.graphics.setColor(0.5,0.4,0.5,1)
-        love.graphics.line((x-1)*24+1,(y-1)*24,(x-1)*24+1,y*24)
-      end
-      if cl.walls[2] then
-        love.graphics.setColor(0.5,0.4,0.5,1)
-        love.graphics.line((x-1)*24,(y-1)*24+1,x*24,(y-1)*24+1)
-      end
+      love.graphics.setColor(0.4,0.7,0.5,1)
+      local OFFSET=1
+      if cl.walls[5] then love.graphics.line(x*24-OFFSET,(y-1)*24,x*24-OFFSET,y*24) end
+      if cl.walls[8] then love.graphics.line((x-1)*24,y*24-OFFSET,x*24,y*24-OFFSET) end
+      if cl.walls[7] then love.graphics.line((x-1)*24+OFFSET,(y-1)*24,(x-1)*24+OFFSET,y*24) end
+      if cl.walls[6] then love.graphics.line((x-1)*24,(y-1)*24+OFFSET,x*24,(y-1)*24+OFFSET) end
+      --
+      love.graphics.setColor(1,1,1,1)
       love.graphics.setLineWidth(1)
 
       if cl.device and cl.device.draw then

@@ -1,10 +1,11 @@
+local class = class or require "middleclass"
 
 ----------------------------------------
 Device = class("Device")
 
 function Device:initialize(name,char,ship,cell,variant,inputs,outputs,decay,args)
   self.ship = ship
-  self.name = name
+  self.name = (variant and (name..'-'..tostring(variant))) or name
   self.char = char
   self.efficiency = 1.0
   self.inputs = inputs or {}
@@ -32,20 +33,20 @@ function Device:initialize(name,char,ship,cell,variant,inputs,outputs,decay,args
   self.operate_job = nil
 
   self.animations = {
-    electronic = {
-      ELECTRONIC_ANIM[1]:clone({x=12,y=12}),
-      ELECTRONIC_ANIM[2]:clone({x=12,y=12}),
-      ELECTRONIC_ANIM[3]:clone({x=12,y=12}),
+    damage_electronic = {
+      ANIMATIONS.damage_electronic[1]:clone({x=12,y=12}),
+      ANIMATIONS.damage_electronic[2]:clone({x=12,y=12}),
+      ANIMATIONS.damage_electronic[3]:clone({x=12,y=12}),
     },
-    mechanical = {
-      MECHANICAL_ANIM[1]:clone({x=12,y=12}),
-      MECHANICAL_ANIM[2]:clone({x=12,y=12}),
-      MECHANICAL_ANIM[3]:clone({x=12,y=12}),
+    damage_mechanical = {
+      ANIMATIONS.damage_mechanical[1]:clone({x=12,y=12}),
+      ANIMATIONS.damage_mechanical[2]:clone({x=12,y=12}),
+      ANIMATIONS.damage_mechanical[3]:clone({x=12,y=12}),
     },
-    quantum = {
-      QUANTUM_ANIM[1]:clone({x=12,y=12}),
-      QUANTUM_ANIM[2]:clone({x=12,y=12}),
-      QUANTUM_ANIM[3]:clone({x=12,y=12}),
+    damage_quantum = {
+      ANIMATIONS.damage_quantum[1]:clone({x=12,y=12}),
+      ANIMATIONS.damage_quantum[2]:clone({x=12,y=12}),
+      ANIMATIONS.damage_quantum[3]:clone({x=12,y=12}),
     },
   }
   for _,an in pairs(self.animations) do
@@ -65,11 +66,16 @@ function Device:draw()
   love.graphics.setColor(1,1,1,1)
   if self.tile then
     love.graphics.draw(self.tile)
-  else
-    love.graphics.print(self.char, FONT_1, 0,0)
+  --else
+    --love.graphics.print(self.char, FONT_1, 0,0)
   end
   for i=1,4 do
     if self.active_animations[i] then
+      if i==1 then
+        love.graphics.setColor(1,1,1,1)
+      else
+        love.graphics.setColor(1,1,1,0.75)
+      end
       self.active_animations[i]:draw()
     end
   end
@@ -141,9 +147,9 @@ function Device:slow_update(dt)
     self.active_animations[1]:set_fps_scale(self.efficiency)
   end
 
-  self.active_animations[2] = self.animations.electronic[3-math.floor(self.health.electronic*4)]
-  self.active_animations[3] = self.animations.mechanical[3-math.floor(self.health.mechanical*4)]
-  self.active_animations[4] = self.animations.quantum[3-math.floor(self.health.quantum*4)]
+  self.active_animations[2] = self.animations.damage_electronic[3-math.floor(self.health.electronic*4)]
+  self.active_animations[3] = self.animations.damage_mechanical[3-math.floor(self.health.mechanical*4)]
+  self.active_animations[4] = self.animations.damage_quantum[3-math.floor(self.health.quantum*4)]
 end
 
 function Device:update(dt)
@@ -170,8 +176,7 @@ end
 ReactorCore = class("ReactorCore", Device)
 function ReactorCore:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Reactor Core",'R',ship,cell,variant,{},{energy=1000,radiation=1/8},{1,4,8})
-  self.animations.tile = REACTOR_ANIM:clone({x=12,y=12})
-  self.active_animations[1] = self.animations.tile
+  self.active_animations[1] = ANIMATIONS.reactor[variant]:clone({x=12,y=12})
   self.health.electronic = 0.25
   self.health.mechanical = 0.75
   self.health.quantum = 0.75
@@ -180,16 +185,19 @@ end
 O2Reprocessor = class("O2Reprocessor", Device)
 function O2Reprocessor:initialize(ship,cell,variant)
   self.class.super.initialize(self,"O2 Reprocessor",'O',ship,cell,variant,{energy=10},{o2=32},{4,8,1})
+  self.active_animations[1] = ANIMATIONS.o2_reprocessor[variant]:clone({x=12,y=12})
 end
 ----------
 ShieldSystem = class("ShieldSystem", Device)
 function ShieldSystem:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Shield System",'S',ship,cell,variant,{energy=100},{},{2,4,4})
+  self.active_animations[1] = ANIMATIONS.shield_system[variant]:clone({x=12,y=12})
 end
 ----------
 ThermalRegulator = class("ThermalRegulator", Device)
 function ThermalRegulator:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Thermal Regulator",'T',ship,cell,variant,{energy=10},{temp=2}, {4,8,1})
+  self.active_animations[1] = ANIMATIONS.thermal_regulator[variant]:clone({x=12,y=12})
   self.mode = 'heat'
 end
 function ThermalRegulator:slow_update(dt)
@@ -219,16 +227,19 @@ end
 Co2Scrubber = class("Co2Scrubber", Device)
 function Co2Scrubber:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Co2 Scrubber",'C',ship,cell,variant,{energy=10,co2=50},{o2=25}, {4,8,1})
+  self.active_animations[1] = ANIMATIONS.co2_scrubber[variant]:clone({x=12,y=12})
 end
 ----------
 FoodSynthesizer = class("FoodSynthesizer", Device)
 function FoodSynthesizer:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Food Synthesizer",'F',ship,cell,variant,{energy=10,slurry=1},{food=1}, {4,8,1})
+  self.active_animations[1] = ANIMATIONS.food_synthesizer[variant]:clone({x=12,y=12})
 end
 ----------
 Toilet = class("Toilet", Device)
 function Toilet:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Toilet",'t',ship,cell,variant,{energy=1},{}, {2,16,1},{activated=true})
+  self.tile = TILES.toilet
 end
 function Toilet:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
@@ -241,17 +252,19 @@ end
 Bed = class("Bed", Device)
 function Bed:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Bed",'b',ship,cell,variant,{energy=1},{}, {1/8,1,1/256},{activated=true,activation_time=10.0})
-  self.tile = BED_IMAGE
+  self.tile = TILES.bed
 end
 function Bed:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
   agent.level.rest = math.min(100, agent.level.rest + dt)
+  if agent.level.rest>=100 then res='done' end
   return res
 end
 ----------
 NutrientDispenser = class("NutrientDispenser", Device)
 function NutrientDispenser:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Nutrient Dispenser",'n',ship,cell,variant,{energy=10},{}, {4,8,1},{activated=true})
+  self.active_animations[1] = ANIMATIONS.nutrient_dispenser[variant]:clone({x=12,y=12})
 end
 function NutrientDispenser:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
@@ -265,6 +278,7 @@ end
 MedicalBay = class("MedicalBay", Device)
 function MedicalBay:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Medical Bay",'m',ship,cell,variant,{energy=100},{}, {4,8,1},{activated=true})
+  self.active_animations[1] = ANIMATIONS.medical_bay[variant]:clone({x=12,y=12})
   self.health.electronic = 0.5
   self.health.mechanical = 0.5
   self.health.quantum = 0.5
@@ -273,45 +287,54 @@ end
 WasteReclamation = class("WasteReclamation", Device)
 function WasteReclamation:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Waste Reclamation",'L',ship,cell,variant,{energy=1,waste=1},{slurry=1/2}, {4,8,1})
+  self.active_animations[1] = ANIMATIONS.waste_reclamation[variant]:clone({x=12,y=12})
 end
 ----------
-WeaponSystem = class("WeaponSystem", Device)
-function WeaponSystem:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Weapon System",'W',ship,cell,variant,{energy=10},{}, {2,4,4},{manned=true})
+WeaponsSystem = class("WeaponsSystem", Device)
+function WeaponsSystem:initialize(ship,cell,variant)
+  self.class.super.initialize(self,"Weapons System",'W',ship,cell,variant,{energy=10},{}, {2,4,4},{manned=true})
+  self.active_animations[1] = ANIMATIONS.weapons_system[variant]:clone({x=12,y=12})
 end
 ----------
 SensorSystem = class("SensorSystem", Device)
 function SensorSystem:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Sensor System",'E',ship,cell,variant,{energy=10},{}, {2,4,4},{manned=true})
+  self.active_animations[1] = ANIMATIONS.sensor_system[variant]:clone({x=12,y=12})
 end
 ----------
 NavigationSystem = class("NavigationSystem", Device)
 function NavigationSystem:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Navigation System",'N',ship,cell,variant,{energy=10},{}, {2,4,4},{manned=true})
+  self.active_animations[1] = ANIMATIONS.navigation_system[variant]:clone({x=12,y=12})
 end
 ----------
 PropulsionSystem = class("PropulsionSystem", Device)
 function PropulsionSystem:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Propulsion System",'P',ship,cell,variant,{energy=10},{}, {2,4,4})
+  self.active_animations[1] = ANIMATIONS.propulsion_system[variant]:clone({x=12,y=12})
 end
 ----------
 FTLJumpDrive = class("FTLJumpDrive", Device)
 function FTLJumpDrive:initialize(ship,cell,variant)
   self.class.super.initialize(self,"FTL Jump Drive",'J',ship,cell,variant,{energy=10},{}, {2,4,8},{operated=true})
+  self.active_animations[1] = ANIMATIONS.ftl_jump_drive[variant]:clone({x=12,y=12})
 end
 ----------
 FlightConsole = class("FlightConsole", Device)
 function FlightConsole:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Flight Console",'B',ship,cell,variant,{energy=10},{}, {2,4,8},{manned=true})
+  self.active_animations[1] = ANIMATIONS.flight_console:clone({x=12,y=12})
 end
 ----------
 DefenseConsole = class("DefenseConsole", Device)
 function DefenseConsole:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Defense Console",'D',ship,cell,variant,{energy=10},{}, {2,4,8},{manned=true})
+  self.active_animations[1] = ANIMATIONS.defense_console:clone({x=12,y=12})
 end
 ----------
 FTLJumpConsole = class("FTLJumpConsole", Device)
 function FTLJumpConsole:initialize(ship,cell,variant)
   self.class.super.initialize(self,"FTL Jump Console",'Z',ship,cell,variant,{energy=10},{}, {2,4,8},{manned=true})
+  self.active_animations[1] = ANIMATIONS.ftl_jump_console:clone({x=12,y=12})
 end
 

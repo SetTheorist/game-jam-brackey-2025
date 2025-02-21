@@ -1,3 +1,4 @@
+local class = class or require "middleclass"
 
 local PI = math.pi
 local PI2 = math.pi/2

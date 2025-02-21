@@ -15,7 +15,7 @@ function love.conf(t)
   t.window.fullscreen = false
   t.window.fullscreentype = 'desktop'
   t.window.height = 896
-  t.window.icon = "art/20250215-random.png"
+  t.window.icon = "art/icon.png"
   t.window.resizable = false
   t.window.title = "GSS Gigantic"
   t.window.vsync = 1

@@ -44,11 +44,11 @@ function Crew:initialize(name,ship)
     }
 
   self.level = {
-    health=100-50*love.math.random(64)/64,
+    health=100-20*love.math.random(64)/64,
     food=10+50*love.math.random(64)/64,
     o2=120,
     waste=1+10*love.math.random(64)/64,
-    rest=100-30*love.math.random(64)/64,
+    rest=100-50*love.math.random(64)/64,
     stress=10,
     }
   self.name = name
@@ -57,13 +57,11 @@ function Crew:initialize(name,ship)
   self.color = {0.5+love.math.random()*0.5,0.5+love.math.random()*0.5,0.5+love.math.random()*0.5}
   self.color[love.math.random(3)] = 0.0
   self.animations = {
-    idle    = Anim(4,CREW_IMAGE,4,1, 24,24, 0, 0, 0),
-    sleep   = Anim(4,CREW_IMAGE,4,1, 24,24, 0, 0, 0),
-    --
-    walk    = Anim(1,CREW_IMAGE,4,1, 24,24, 0,24, 0),
-    --
-    operate = Anim(1,CREW_IMAGE,4,1, 24,24, 0,48, 0),
-    repair  = Anim(1,CREW_IMAGE,4,1, 24,24, 0,48, 0),
+    idle    = ANIMATIONS.crew.idle:clone(),
+    sleep   = ANIMATIONS.crew.sleep:clone(),
+    walk    = ANIMATIONS.crew.walk:clone(),
+    operate = ANIMATIONS.crew.operate:clone(),
+    repair  = ANIMATIONS.crew.repair:clone(),
     }
   self.animations.walk:set_fps_scale(6*self.walk_speed/4)
   self.animations.operate:set_fps_scale(5*self.work_speed)
@@ -108,10 +106,7 @@ function Crew:die()
     self.current_action = nil
     self.job_stack = {}
   end
-  if chosen_crew == self then
-    chosen_crew = nil
-  end
-  -- TODO: rest of death handling...
+  EVENT_MANAGER:emit('crew_death', self)
 end
 
 function Crew:slow_update(dt)
@@ -139,7 +134,7 @@ function Crew:slow_update(dt)
   elseif self.level.waste > 10 and not self.job_flags.WasteJob then
     self.job_stack[#self.job_stack+1] = WasteJob(1.0)
     self.job_flags.WasteJob = true
-  elseif self.level.rest < 10 then
+  elseif self.level.rest < 10 and not self.job_flags.SleepJob then
     self.job_stack[#self.job_stack+1] = SleepJob(1.0)
     self.job_flags.SleepJob = true
   elseif self.level.stress > 100 then
