@@ -44,19 +44,30 @@ function scene_credits:draw(isactive)
 
   y = 120
   love.graphics.print("Programming", FONTS.torek_16, 48,y); y=y+24
-  love.graphics.print("Game development: Apollo", 96,y); y=y+16
+  love.graphics.print("Game development: Apollo (Dreaming Rlyeh Studio)", 96,y); y=y+16
   love.graphics.print("LÖVE2D game framework: https://love2d.org/", 96,y); y=y+16
   love.graphics.print("The 'middleclass' Lua library by kikito: https://github.com/kikito/middleclass", 96,y); y=y+16
 
   y = 240
   love.graphics.print("Art", FONTS.torek_16, 48,y); y=y+24
-  love.graphics.print("Art assets: Apollo", 96,y); y=y+16
+  love.graphics.print("Art assets: Apollo (Dreaming Rlyeh Studio)", 96,y); y=y+16
 
   y = 360
-  love.graphics.print("Music", FONTS.torek_16, 48,y); y=y+24
+  love.graphics.print("Fonts", FONTS.torek_16, 48,y); y=y+24
+  love.graphics.print("Malefissent: Theyann PentaGram / Full Moon Design House", 96,y); y=y+16
+  love.graphics.print("Toreks Regular: AsyaLogo", 96,y); y=y+16
 
   y = 480
-  love.graphics.print("Fonts", FONTS.torek_16, 48,y); y=y+24
+  love.graphics.print("Music", FONTS.torek_16, 48,y); y=y+24
+  love.graphics.print("Some effects made by Apollo using jsfxr: https://sfxr.me/", 96,y); y=y+16
+  love.graphics.print("Celestial Voices by Nancy_Sinclair -- https://freesound.org/s/759643/ -- License: Creative Commons 0", 96,y); y=y+16
+  love.graphics.print("Future of Hope - bpm 85 loop by DenKyschuk -- https://freesound.org/s/726343/ -- License: Attribution NonCommercial 4.0", 96,y); y=y+16
+  love.graphics.print("Motivational Day by Universfield -- https://freesound.org/s/701089/ -- License: Attribution 4.0", 96,y); y=y+16
+  love.graphics.print("music elevator ext by Jay_You -- https://freesound.org/s/467240/ -- License: Attribution 4.0", 96,y); y=y+16
+  love.graphics.print("Tense Crime Atmosphere for Films and Media by Nancy_Sinclair -- https://freesound.org/s/750627/ -- License: Creative Commons 0", 96,y); y=y+16
+  love.graphics.print("https://pixabay.com/sound-effects/cartoon-trombone-sound-effect-241387/", 96,y); y=y+16
+  love.graphics.print("https://pixabay.com/sound-effects/large-underwater-explosion-190270/", 96,y); y=y+16
+  love.graphics.print("https://pixabay.com/sound-effects/sci-fi-weapon-shoot-firing-plasma-pp-05-233829/", 96,y); y=y+16
 end
 
 ----------------------------------------
