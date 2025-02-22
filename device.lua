@@ -5,7 +5,8 @@ Device = class("Device")
 
 function Device:initialize(name,char,priority,ship,cell,variant,inputs,outputs,decay,args)
   self.ship = ship
-  self.name = (variant and (name..'-'..tostring(variant))) or name
+  --self.name = (variant and (name..'-'..tostring(variant))) or name
+  self.name = name
   self.char = char
   self.priority = priority
   self.efficiency = 1.0

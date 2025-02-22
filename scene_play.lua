@@ -15,6 +15,7 @@ local chosen_cell = nil
 local chosen_crew = nil
 local chosen_crew_idx = 0
 local elapsed_time = 0
+local ALLOWED_ELAPSED_TIME = 200
 local paused = false
 local MAX_MESSAGES = 100
 local the_messages = {}
@@ -78,15 +79,26 @@ local function handle_add_operate_job(event)
   end
 end
 
+local function handle_win_game(event, reason)
+  -- TODO: make these popups (and then pop to start menu)?
+  SCENE_MANAGER:set('win', reason, the_score, the_progress)
+end
+
+local function handle_lose_game(event, reason)
+  -- TODO: make these popups (and then pop to start menu)?
+  SCENE_MANAGER:set('lose', reason, the_score, the_progress)
+end
 
 --------------------------------------------------------------------------------
 function scene_play:load()
-  EVENT_MANAGER:on('crew_death', 'global', handle_event_crew_death)
-  EVENT_MANAGER:on('score:add', 'global', handle_event_score_change)
-  EVENT_MANAGER:on('score:sub', 'global', handle_event_score_change)
-  EVENT_MANAGER:on('message', 'global', handle_message)
-  EVENT_MANAGER:on('add_repair_job', 'global', handle_add_repair_job)
-  EVENT_MANAGER:on('add_operate_job', 'global', handle_add_operate_job)
+  EVENT_MANAGER:on('crew_death', self, handle_event_crew_death)
+  EVENT_MANAGER:on('score:add', self, handle_event_score_change)
+  EVENT_MANAGER:on('score:sub', self, handle_event_score_change)
+  EVENT_MANAGER:on('message', self, handle_message)
+  EVENT_MANAGER:on('add_repair_job', self, handle_add_repair_job)
+  EVENT_MANAGER:on('add_operate_job', self, handle_add_operate_job)
+  EVENT_MANAGER:on('win-game', self, handle_win_game)
+  EVENT_MANAGER:on('lose-game', self, handle_lose_game)
 end
 
 function scene_play:reset()
@@ -137,6 +149,16 @@ local function slow_game_tick(dt)
       EVENT_MANAGER:emit('message', string.format("Auto-repair job: %s (health=%i)", j, d.total_health*100), {0.75,0.75,0.75})
     end
   end
+  
+  if elapsed_time >= ALLOWED_ELAPSED_TIME then
+    EVENT_MANAGER:emit('lose-game', 'out of time')
+  end
+  if #the_ship.the_crew == 0 then
+    EVENT_MANAGER:emit('lose-game', 'all crew dead')
+  end
+  if #the_ship.the_crew == 0 then
+    EVENT_MANAGER:emit('lose-game', 'all crew dead')
+  end
 end
 
 ----------------------------------------
@@ -159,7 +181,7 @@ local function game_tick(dt)
     the_progress.current_node = NODES[the_progress.current_node.next]
     if not the_progress.current_node then
       EVENT_MANAGER:emit('score:add', 1000, 'complete-journey')
-      the_progress.current_node = START_NODE -- TODO: actual game WIN screen!
+      EVENT_MANAGER:emit('win-game')
     end
     if the_progress.current_node == FINAL_NODE then
       EVENT_MANAGER:emit('message', "Progressed to final stage of travel: "..the_progress.current_node.name, {0.6,1,0.6})
@@ -268,10 +290,10 @@ function scene_play:keypressed(key,scancode,isrepeat)
   chosen_crew = the_ship.the_crew[chosen_crew_idx]
 
   if key=='w' then
-    SCENE_MANAGER:set('win', the_score, the_progress)
+    EVENT_MANAGER:emit('win-game', 'debug')
   end
   if key=='l' then
-    SCENE_MANAGER:set('lose', the_score, the_progress)
+    EVENT_MANAGER:emit('lose-game', 'debug')
   end
 
   --[[

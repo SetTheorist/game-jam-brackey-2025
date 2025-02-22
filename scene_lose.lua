@@ -3,11 +3,26 @@ local Scene = Scene or require "scene"
 local scene_lose = Scene('lose')
 
 local game_score = nil
+local game_score_breakdown = nil
 local game_progress = nil
+local game_reason = nil
 
-function scene_lose:enter(prev_scene, the_score, the_progress)
+function scene_lose:enter(prev_scene, the_reason, the_score, the_progress)
   game_score = the_score
   game_progress = the_progress
+  game_reason = the_reason
+
+  game_score_breakdown = {}
+  for k,v in pairs(game_score.breakdown) do
+    game_score_breakdown[#game_score_breakdown+1] = {k,v}
+  end
+  table.sort(game_score_breakdown,
+    function(a,b)
+      return ((math.abs(a[2])>math.abs(b[2]))
+        or (math.abs(a[2])==math.abs(b[2]) and a[2]>b[2])
+        or (a[2]==b[2] and a[1]<b[1])
+        )
+    end)
 end
 
 function scene_lose:draw(isactive)
@@ -17,6 +32,9 @@ function scene_lose:draw(isactive)
   love.graphics.print("YOU LOST!", FONTS.torek_42, 100  , 100  )
   love.graphics.setColor(1,0,0)
   love.graphics.print("YOU LOST!", FONTS.torek_42, 100+4, 100+4)
+
+  love.graphics.setColor(1,1,1)
+  love.graphics.print(game_reason, FONTS.torek_42, 150, 150)
 
   love.graphics.setColor(0,1,0)
   love.graphics.print("Press any key", FONTS.torek_42, 200-4, 300-4)
@@ -34,10 +52,8 @@ function scene_lose:draw(isactive)
 
   love.graphics.setColor(1,1,1)
   love.graphics.print(string.format("Final score: %0.01f", game_score.score), 100, 600)
-  local i = 0
-  for k,v in pairs(game_score.breakdown) do
-    love.graphics.print(string.format("%s - %0.01f", k, v), 124, 624+i*12)
-    i = i+1
+  for i,x in ipairs(game_score_breakdown) do
+    love.graphics.print(string.format("%s: %0.01f", x[1], x[2]), 124+math.floor(i/20)*240, 624+(1+(i%20))*12)
   end
 end
 

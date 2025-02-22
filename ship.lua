@@ -253,6 +253,7 @@ function Ship:initialize()
     }
 
   self:setup_map()
+  self.the_crew = nil
   self:setup_crew()
 end
 
