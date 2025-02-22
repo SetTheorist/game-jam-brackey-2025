@@ -92,8 +92,8 @@ function draw_progress_panel(the_progress)
   local y = cn.start_position[2] + ep*cn.dir[2]
   love.graphics.circle('fill', x*24-12, y*24-12, 5)
 
-  love.graphics.printf(cn.name,        FONTS.torek, 144,  2.5, 216, 'center')
-  love.graphics.printf(cn.description,              144, 24,   216, 'center')
+  love.graphics.printf(cn.name,        FONTS.torek_16, 144,  2.5, 216, 'center')
+  love.graphics.printf(cn.description,                 144, 24,   216, 'center')
 end
 
 ----------------------------------------

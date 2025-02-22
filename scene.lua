@@ -1,4 +1,4 @@
-local class = require "middleclass"
+local class = class or require "middleclass"
 
 --------------------------------------------------------------------------------
 

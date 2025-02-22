@@ -1,4 +1,4 @@
-local class = require "middleclass"
+local class = class or require "middleclass"
 
 --------------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ function SceneManager:initialize(scenes)
     s.manager = self
   end
   self.stack = {}
-  for k,v in pairs(self.scenes) do print(k,v) end
+  --for k,v in pairs(self.scenes) do print(k,v) end
 end
 
 function SceneManager:load()
@@ -57,7 +57,7 @@ function SceneManager:quit()
 end
 
 function SceneManager:set(scene_id,...)
-  print(string.format("SceneManager:set(%s) %s", scene_id, self))
+  --print(string.format("SceneManager:set(%s) %s", scene_id, self))
   local next_scene = self.scenes[scene_id]
   if next_scene == self.active_scene then return end
   local prev_scene = self.active_scene
@@ -73,7 +73,7 @@ function SceneManager:set(scene_id,...)
 end
 
 function SceneManager:push(scene_id,...)
-  print(string.format("SceneManager:push(%s) %s", scene_id, self))
+  --print(string.format("SceneManager:push(%s) %s", scene_id, self))
   local next_scene = self.scenes[scene_id]
   local prev_scene = self.active_scene
   if prev_scene then
@@ -89,7 +89,7 @@ function SceneManager:push(scene_id,...)
 end
 
 function SceneManager:pop(...)
-  print(string.format("SceneManager:pop(%s) %s", scene_id, self))
+  --print(string.format("SceneManager:pop(%s) %s", scene_id, self))
   local prev_scene = self.active_scene
   local next_scene = self.stack[#self.stack]
   if prev_scene then

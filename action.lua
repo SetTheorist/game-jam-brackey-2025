@@ -285,8 +285,8 @@ function WalkAction:execute(dt)
     self.agent.location.x = math.floor((self.agent.location.x + dir_x*t)*1024)/1024
     self.agent.location.y = math.floor((self.agent.location.y + dir_y*t)*1024)/1024
 
-    if dir_x>0 then self.agent.facing = 0
-    elseif dir_x<0 then self.agent.facing = PI
+    if dir_x>0 and math.abs(dir_x)>math.abs(dir_y) then self.agent.facing = 0
+    elseif dir_x<0 and math.abs(dir_x)>math.abs(dir_y) then self.agent.facing = PI
     elseif dir_y>0 then self.agent.facing = PI2
     elseif dir_y<0 then self.agent.facing = -PI2
     end
@@ -329,7 +329,6 @@ function RepairAction:finish()
   self.device:unclaim()
 end
 
--- TODO: early complete when repairs completed
 function RepairAction:execute(dt)
   dt = dt * self.agent.work_speed
   self.elapsed = self.elapsed + dt
