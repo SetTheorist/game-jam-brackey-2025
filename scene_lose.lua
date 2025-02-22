@@ -6,11 +6,41 @@ local game_score = nil
 local game_score_breakdown = nil
 local game_progress = nil
 local game_reason = nil
+local game_difficulty = 1
+local elapsed = 0
+local MUSIC = nil
 
-function scene_lose:enter(prev_scene, the_reason, the_score, the_progress)
+function scene_lose:load()
+  MUSIC = AUDIO.crime
+end
+
+----------------------------------------
+function scene_lose:exit(next_scene,...)
+  Scene.exit(self, prev_scene, ...)
+  if MUSIC then MUSIC:stop() end
+end
+
+----------------------------------------
+function scene_lose:resume(next_scene,...)
+  Scene.resume(self, prev_scene, ...)
+  if MUSIC then MUSIC:play() end
+end
+
+----------------------------------------
+function scene_lose:pause(prev_scene,...)
+  Scene.pause(self, prev_scene, ...)
+  if MUSIC then MUSIC:pause() end
+end
+
+----------------------------------------
+function scene_lose:enter(prev_scene, the_reason, the_score, the_progress, the_difficulty, ...)
+  Scene.enter(self, prev_scene, ...)
+  if MUSIC then MUSIC:play() end
+
   game_score = the_score
   game_progress = the_progress
   game_reason = the_reason
+  game_difficulty = the_difficulty
 
   game_score_breakdown = {}
   for k,v in pairs(game_score.breakdown) do
@@ -25,7 +55,16 @@ function scene_lose:enter(prev_scene, the_reason, the_score, the_progress)
     end)
 end
 
+----------------------------------------
+function scene_lose:update(dt)
+  elapsed = elapsed + dt/5
+end
+
+----------------------------------------
 function scene_lose:draw(isactive)
+  local c = love.math.noise(elapsed)/5
+  love.graphics.clear(c,c,c,1)
+
   love.graphics.setColor(0,1,0)
   love.graphics.print("YOU LOST!", FONTS.torek_42, 100-4, 100-4)
   love.graphics.setColor(0,0,1)
@@ -34,7 +73,10 @@ function scene_lose:draw(isactive)
   love.graphics.print("YOU LOST!", FONTS.torek_42, 100+4, 100+4)
 
   love.graphics.setColor(1,1,1)
-  love.graphics.print(game_reason, FONTS.torek_42, 150, 150)
+  love.graphics.print(game_reason, FONTS.torek_42, 150, 200)
+
+  love.graphics.setColor(1,1,0)
+  love.graphics.print("Difficulty level "..({"EASY","NORMAL","IMPOSSIBLE"})[game_difficulty], FONTS.torek_16, 150, 500)
 
   love.graphics.setColor(0,1,0)
   love.graphics.print("Press any key", FONTS.torek_42, 200-4, 300-4)
@@ -57,9 +99,11 @@ function scene_lose:draw(isactive)
   end
 end
 
+----------------------------------------
 function scene_lose:keypressed(key,scancode,isrepeat)
   SCENE_MANAGER:set('start')
 end
 
+----------------------------------------
 return scene_lose
 

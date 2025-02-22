@@ -115,6 +115,8 @@ function draw_crew_panel(crew)
   love.graphics.print(string.format("Waste:%3i",  crew.level.waste),  2.5,59.5)
   love.graphics.print(string.format("Stress:%3i", crew.level.stress), 2.5,71.5)
   love.graphics.print(string.format("O2:%3i",     crew.level.o2),     2.5,83.5)
+  love.graphics.setColor(1,0.5,0.5)
+  love.graphics.print(crew.last_damage, 102.5,23.5)
 
   if crew.current_action then
     love.graphics.setColor(0,1,0.5,1)
@@ -134,27 +136,28 @@ function draw_ship_stats_panel(ship)
   draw_border(239,287)
 
   love.graphics.setColor(1,1,1)
-  love.graphics.print(string.format("co2:%3i", ship.level.co2.value), 1.5,1.5)
-  love.graphics.print(string.format("energy:%3i", ship.level.energy.value), 1.5,13.5)
-  love.graphics.print(string.format("o2:%3i", ship.level.o2.value), 1.5,25.5)
-  love.graphics.print(string.format("radiation:%3i", ship.level.radiation.value), 1.5,37.5)
-  love.graphics.print(string.format("food:%3i", ship.level.food.value), 1.5,49.5)
-  love.graphics.print(string.format("slurry:%3i", ship.level.slurry.value), 1.5,61.5)
-  love.graphics.print(string.format("temp:%3i", ship.level.temp.value), 1.5,73.5)
-  love.graphics.print(string.format("waste:%3i", ship.level.waste.value), 1.5,85.5)
-
-  love.graphics.print(string.format("sensor_data:%3i", ship.level.sensor_data.value), 1.5,107.5)
-  love.graphics.print(string.format("navigation_data:%3i", ship.level.navigation_data.value), 1.5,119.5)
-
-  love.graphics.print(string.format("propulsion_power:%3i", ship.level.propulsion_power.value), 1.5,141.5)
-  love.graphics.print(string.format("shield_power:%3i", ship.level.shield_power.value), 1.5,153.5)
-  love.graphics.print(string.format("weapons_power:%3i", ship.level.weapons_power.value), 1.5,165.5)
-
-  love.graphics.print(string.format("defence_command:%3i", ship.level.defence_command.value), 1.5,187.5)
-  love.graphics.print(string.format("flight_command:%3i", ship.level.flight_command.value), 1.5,199.5)
-  love.graphics.print(string.format("ftl_command:%3i", ship.level.ftl_command.value), 1.5,211.5)
-
-  love.graphics.print(string.format("progress_power:%3i", ship.level.progress_power.value), 1.5,235.5)
+  local y = 1.5
+  love.graphics.print(string.format("energy:%3i", ship.level.energy.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("CO2:%3i", ship.level.co2.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("O2:%3i", ship.level.o2.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("food:%3i", ship.level.food.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("slurry:%3i", ship.level.slurry.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("temperature:%3i", ship.level.temperature.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("waste:%3i", ship.level.waste.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("radiation:%3i", ship.level.radiation.value), 1.5,y); y=y+12
+  y=y+12
+  love.graphics.print(string.format("sensor-data:%3i", ship.level.sensor_data.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("navigation-data:%3i", ship.level.navigation_data.value), 1.5,y); y=y+12
+  y=y+12
+  love.graphics.print(string.format("propulsion-power:%3i", ship.level.propulsion_power.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("shield-power:%3i", ship.level.shield_power.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("weapons-power:%3i", ship.level.weapons_power.value), 1.5,y); y=y+12
+  y=y+12
+  love.graphics.print(string.format("defence-command:%3i", ship.level.defence_command.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("flight-command:%3i", ship.level.flight_command.value), 1.5,y); y=y+12
+  love.graphics.print(string.format("ftl-command:%3i", ship.level.ftl_command.value), 1.5,y); y=y+12
+  y=y+12
+  love.graphics.print(string.format("progress-power:%3i", ship.level.progress_power.value), 1.5,y); y=y+12
 end
 
 ----------------------------------------
@@ -181,6 +184,22 @@ end
 ----------------------------------------
 function draw_cell_panel(cell)
   draw_border(239,287)
+  local NAME_Y = 18.5
+  local DESCRIPTION_Y = 35.5
+  local STATE_Y = 71.5
+  local ENERGY_Y = 159.5
+
+  local function level_color(l)
+    if l<0.25 then
+      love.graphics.setColor(1,0.25,0.5)
+    elseif l<0.50 then
+      love.graphics.setColor(1,0.75,0.5)
+    elseif l<0.75 then
+      love.graphics.setColor(1,1,0.5)
+    else
+      love.graphics.setColor(1,1,1)
+    end
+  end
 
   if not cell then return end
   love.graphics.setColor(1,1,1)
@@ -192,56 +211,66 @@ function draw_cell_panel(cell)
 
   if not d.enabled then
     love.graphics.setColor(1,0.25,0.5)
-    love.graphics.print(d.name, 1.5,13.5)
-    love.graphics.setColor(1,1,1)
+    love.graphics.print(d.name, 1.5,NAME_Y)
   else
-    love.graphics.print(d.name, 1.5,13.5)
+    love.graphics.print(d.name, 1.5,NAME_Y)
   end
-  if d.activated then love.graphics.print('a', 199.5-12*2,13.5) end
-  if d.manned    then love.graphics.print('m', 199.5-12*1,13.5) end
+  --if d.activated then love.graphics.print('a', 199.5-12*2,13.5) end
+  --if d.manned    then love.graphics.print('m', 199.5-12*1,13.5) end
+  if d.tile then
+    love.graphics.setColor(0.7,0.7,0.8)
+    love.graphics.rectangle('fill',240-24-2,3, 24,24)
+    love.graphics.setColor(1,1,1,1)
+    love.graphics.draw(d.tile, 240-24-2+0.5, 3+0.5)
+  elseif d.active_animations[1] then
+    local a = d.active_animations[1]
+    love.graphics.setColor(0.7,0.7,0.8)
+    love.graphics.rectangle('fill',240-24-2,3, 24,24)
+    love.graphics.setColor(1,1,1,1)
+    love.graphics.draw(a.image, a.quads[1+a.frame], 240-24-2, 3)
+  end
 
-  if d.efficiency<0.25 then
-    love.graphics.setColor(1,0.25,0.5)
-  elseif d.efficiency<0.50 then
-    love.graphics.setColor(1,0.5,0.5)
-  elseif d.efficiency<0.75 then
-    love.graphics.setColor(1,1,0.5)
-  end
-  love.graphics.print(string.format("Efficiency:%3i", (d.efficiency*100)), 1.5,25.5)
+  level_color(d.efficiency)
+  love.graphics.print(string.format("Efficiency:%3i", (d.efficiency*100)), 1.5,STATE_Y)
+
   love.graphics.setColor(1,1,1)
-
   if d.owner then
-    love.graphics.print(d.owner, 13.5,13.5)
+    love.graphics.print(d.owner, 13.5,NAME_Y)
   end
 
   -- TODO: move health to "Level" and plot historical chart
+  level_color(d.health.electronic)
   love.graphics.print(string.format("Electronic:%3i (-%.04f%%)",
-    (d.health.electronic*100), (d.decay.electronic*100)), 13.5, 37.5)
+    (d.health.electronic*100), (d.decay.electronic*100)), 13.5, STATE_Y+12)
+  level_color(d.health.mechanical)
   love.graphics.print(string.format("Mechanical:%3i (-%.04f%%)",
-    (d.health.mechanical*100), (d.decay.mechanical*100)), 13.5, 49.5)
+    (d.health.mechanical*100), (d.decay.mechanical*100)), 13.5, STATE_Y+24)
+  level_color(d.health.quantum)
   love.graphics.print(string.format("Quantum:%3i (-%.04f%%)",
-    (d.health.quantum*100), (d.decay.quantum*100)), 13.5, 61.5)
+    (d.health.quantum*100), (d.decay.quantum*100)), 13.5, STATE_Y+36)
+  level_color(d.integrity)
   love.graphics.print(string.format("[Integrity:%3i]",
-    (d.integrity*100)), 13.5, 73.5)
+    (d.integrity*100)), 13.5, STATE_Y+48)
 
+  love.graphics.setColor(1,1,1,1)
   if d.activation_elapsed>0 then
     love.graphics.print(string.format("Accrued:%0.01f/%0.01f",
-      d.activation_elapsed, d.activation_time), 13.5, 85.5)
+      d.activation_elapsed, d.activation_time), 13.5, STATE_Y+60+4)
   end
 
-  local i = 100.5
-  for k,v in pairs(d.inputs) do
-    love.graphics.print(k, 1.5, i)
-    love.graphics.print(v, 51.5, i)
-    i = i + 12
+  if d.inputs.energy then
+    love.graphics.setColor(0.90,1,1)
+    love.graphics.print(string.format("Requires %i energy", d.inputs.energy), 1.5, ENERGY_Y)
+  elseif d.outputs.energy then
+    love.graphics.setColor(0.90,1,1)
+    love.graphics.print(string.format("Generates %i energy", d.outputs.energy), 1.5, ENERGY_Y)
   end
 
-  local i = 100.5
-  for k,v in pairs(d.outputs) do
-    love.graphics.print(k, 100+1.5, i)
-    love.graphics.print(v, 100+51.5, i)
-    i = i + 12
-  end
+  love.graphics.setColor(1,0.9,1)
+  if d.mode then love.graphics.print(string.format("Mode: %s", d.mode), 1.5, ENERGY_Y+24) end
+
+  love.graphics.setColor(1,1,0.9)
+  love.graphics.printf(d.description, 3.5,DESCRIPTION_Y, 240-7, 'left')
 
   -- TODO: proper UI
   if d.repair_job then

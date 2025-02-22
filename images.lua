@@ -57,6 +57,8 @@ function load_images()
 
   IMAGES.diamond = love.graphics.newImage('art/particle_diamond.png')
   PARTICLES.diamond = IMAGES.diamond
+  IMAGES.star = love.graphics.newImage('art/particle_star.png')
+  PARTICLES.star = IMAGES.star
 
   IMAGES.decoration_1 = love.graphics.newImage('art/decoration_1-tile.png')
   TILES.decoration_1 = IMAGES.decoration_1

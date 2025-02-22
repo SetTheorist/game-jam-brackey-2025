@@ -57,8 +57,8 @@ function SceneManager:quit()
 end
 
 function SceneManager:set(scene_id,...)
-  --print(string.format("SceneManager:set(%s) %s", scene_id, self))
   local next_scene = self.scenes[scene_id]
+  --print(string.format("SceneManager:set(%s) %s active=%s next=%s", scene_id, self, self.active_scene, next_scene))
   if next_scene == self.active_scene then return end
   local prev_scene = self.active_scene
   if prev_scene then
@@ -70,6 +70,7 @@ function SceneManager:set(scene_id,...)
   else
     print(("Unable to find scene with id `%s`").format(scene_id))
   end
+  collectgarbage('collect')
 end
 
 function SceneManager:push(scene_id,...)
@@ -86,6 +87,7 @@ function SceneManager:push(scene_id,...)
   else
     print(("Unable to find scene with id `%s`").format(scene_id))
   end
+  collectgarbage('collect')
 end
 
 function SceneManager:pop(...)
@@ -100,6 +102,7 @@ function SceneManager:pop(...)
   if self.active_scene then
     self.active_scene:resume(prev_scene,...)
   end
+  collectgarbage('collect')
 end
 
 function SceneManager:keypressed(key,scancode,isrepeat)

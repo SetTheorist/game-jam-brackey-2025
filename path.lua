@@ -36,12 +36,12 @@ function mod.astar(start,goal,step_cost,edges,estimate,reversed)
   local x = goal
   local foundit = true
   while x~=start do
-    local min_res = 1e100
+    local min_res = nil
     local px = x
     for _,pz in ipairs(edges(e,x)) do
       local res_pz = result[pz]
       if res_pz then
-        if res_pz < min_res then
+        if res_pz < (min_res or 1e100) then
           px = pz
           min_res = res_pz
         end

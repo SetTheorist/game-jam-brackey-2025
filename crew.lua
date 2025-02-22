@@ -32,8 +32,8 @@ function Crew:initialize(name,ship)
     stress=10,
     }
   self.name = name
-  self.walk_speed = 3.0 + 2.0*love.math.random(64)/64
-  self.work_speed = 1/2 + love.math.random(64)/64
+  self.walk_speed = (3.0 + 2.0*love.math.random(64)/64)*CREW_SPEED_SCALE
+  self.work_speed = (1/2 + love.math.random(64)/64)*CREW_SPEED_SCALE
   self.color = {0.5+love.math.random()*0.5,0.5+love.math.random()*0.5,0.5+love.math.random()*0.5}
   self.color[love.math.random(3)] = 0.0
   self.animations = {
@@ -49,6 +49,8 @@ function Crew:initialize(name,ship)
   self.anim = self.animations.walk
 
   self.effects = {}
+
+  self.last_damage = ''
   
   local c1
   repeat
@@ -90,7 +92,7 @@ function Crew:die()
   if c then
     c.items[#c.items+1] = {TILES.corpse,love.math.random(25)-12,love.math.random(25)-12}
   end
-  EVENT_MANAGER:emit('crew_death', self)
+  EVENT_MANAGER:emit('crew_death', self, self.last_damage)
 end
 
 function Crew:slow_update(dt)
@@ -98,23 +100,23 @@ function Crew:slow_update(dt)
   local n = #self.effects
   for i=1,n do
     if self.effects[i].slow_update(dt) then
-      -- remove
+      -- remove effect
     end
   end
 
   -- check basic needs
-  if self.level.health < 10 and not self.job_flags.MedJob then
-    self.job_stack[#self.job_stack+1] = MedJob(5.0)
-    self.job_flags.MedJob = true
-  elseif self.level.health < 50 and not self.job_flags.MedJob then
-    self.job_stack[#self.job_stack+1] = MedJob(1.0)
-    self.job_flags.MedJob = true
-  elseif self.level.food < 1  and not self.job_flags.EatJob then
+  if self.level.food < 1  and not self.job_flags.EatJob then
     self.job_stack[#self.job_stack+1] = EatJob(5.0)
     self.job_flags.EatJob = true
   elseif self.level.food < 10  and not self.job_flags.EatJob then
     self.job_stack[#self.job_stack+1] = EatJob(1.0)
     self.job_flags.EatJob = true
+  elseif self.level.health < 10 and not self.job_flags.MedJob then
+    self.job_stack[#self.job_stack+1] = MedJob(5.0)
+    self.job_flags.MedJob = true
+  elseif self.level.health < 50 and not self.job_flags.MedJob then
+    self.job_stack[#self.job_stack+1] = MedJob(1.0)
+    self.job_flags.MedJob = true
   elseif self.level.waste > 10 and not self.job_flags.WasteJob then
     self.job_stack[#self.job_stack+1] = WasteJob(1.0)
     self.job_flags.WasteJob = true
@@ -136,9 +138,24 @@ function Crew:claim_job(j)
   return false
 end
 
--- TODO: should look at global job queue, etc.
 function Crew:new_action()
   self.current_action = nil
+
+  -- if overstressed, then may have breakdown
+  if self.level.stress > 100 and love.math.random()<(self.level.stress-100)/100 then
+    -- TODO: message
+    if love.math.random(2) == 1 then
+      self.current_action = WaitAction(nil, self, 1+love.math.random()*(self.level.stress-100)/20)
+    else
+      local c1
+      repeat
+        c1 = love.math.random(#self.ship.cells)
+      until self.ship.cells[c1].passable
+      self.current_action = WalkAction(nil, self, self.ship.cells[c1])
+    end
+    self.current_action:start()
+    return
+  end
 
   if #self.action_stack>0 then
     self.current_action = self.action_stack[#self.action_stack]
@@ -175,7 +192,7 @@ function Crew:new_action()
     --end
   end
 
-  if love.math.random()<0.50 then
+  if love.math.random(2)==1 then
     self.current_action = WaitAction(nil, self, love.math.random()+0.5)
     self.current_action:start()
   else
@@ -188,7 +205,7 @@ function Crew:new_action()
   end
 end
 
-function Crew:update(dt)
+function Crew:update_pre(dt)
   -- effects
   local n = #self.effects
   for i=1,n do
@@ -211,9 +228,11 @@ function Crew:update(dt)
     self.level.o2 = self.level.o2 - missing
   end
   self.ship.level.co2:add(dt/4)
-  self.ship.level.temp:add(dt)
+  self.ship.level.temperature:add(dt)
+end
 
-  self.level.health = math.min(100.0, self.level.health + dt/32)
+function Crew:update_post(dt)
+  self.level.health = math.min(100.0, self.level.health + dt/16)
   self.level.waste = math.min(64.0, self.level.waste + dt/4/4)
   self.level.food = math.max(0, self.level.food - dt/4)
   self.level.rest = math.max(0, self.level.rest - dt/4)
@@ -222,21 +241,34 @@ function Crew:update(dt)
   --  self.level.stress = math.min(1000.0, self.level.stress + love.math.random())
   --end
   self.level.stress = math.min(1000.0, self.level.stress + love.math.random()*dt)
+
+  if self.ship.level.temperature.value<50 then
+    self.level.health = math.max(0.0, self.level.health - dt*(50-self.ship.level.temperature.value)/25)
+    self.level.stress = math.min(1000.0, self.level.stress + love.math.random()*dt)
+    self.last_damage = 'cold'
+  elseif self.ship.level.temperature.value>110 then
+    self.level.health = math.max(0.0, self.level.health - dt*(self.ship.level.temperature.value-110)/25)
+    self.level.stress = math.min(1000.0, self.level.stress + love.math.random()*dt)
+    self.last_damage = 'heat'
+    io.write('('..tostring(self.ship.level.temperature.value)..')')
+  end
   
   if self.level.waste>32 then
     if love.math.random()*32 < self.level.waste-32 then
       self.level.health = math.max(0.0, self.level.health - dt)
     end
+    self.last_damage = 'sepsis'
   end
   if self.level.food<8 then
     if love.math.random()*32 < (8-self.level.food) then
       self.level.health = math.max(0.0, self.level.health - dt)
     end
+    self.last_damage = 'hunger'
   end
   if self.level.o2<1 then
     self.level.health = math.max(0.0, self.level.health - dt*8)
+    self.last_damage = 'asphyxiation'
   end
-  -- TODO: stress
 
   -- activity
   if not self.current_action then

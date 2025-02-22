@@ -17,7 +17,7 @@ NODES = {
   asteroid_belt = {
     name="Asteroid belt",
     description="A region of space filled with rocky and metallic space debris",
-    events={asteroid_storm=2},
+    events={asteroid_storm=1/16}, -- about 1/"day"
     tile='planet_asteroids',
     next='earth',
     time=6,
@@ -28,7 +28,7 @@ NODES = {
   earth = {
     name="Earth",
     description="Your final destination",
-    events={pirate_attack=2},
+    events={pirate_attack=1/16}, -- about 1/"day"
     tile='planet_earth',
     next={},
     time=8.5,

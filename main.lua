@@ -15,6 +15,7 @@ display = require "display"
 progress = require "progress"
 
 scene_confirm = require "scene_confirm"
+scene_credits = require "scene_credits"
 scene_lose = require "scene_lose"
 scene_play = require "scene_play"
 scene_start = require "scene_start"
@@ -26,11 +27,7 @@ AUDIO = {}
 EVENT_MANAGER = nil
 SCENE_MANAGER = nil
 
-
--- TODO: make these adjustable in-game...
--- (game difficulties: decay factor, crew speed factors)
-GLOBAL_DECAY_FACTOR = 1.0
-AUTO_REPAIR_THRESHOLD = 0.01
+DEBUG_ENABLED = false
 
 --------------------------------------------------------------------------------
 
@@ -49,8 +46,35 @@ function compact(arr,n)
 end
 
 --------------------------------------------------------------------------------
---love.keyboard.getKeyFromScancode('w')
---love.window.setMode(1024, 768, {resizable=false, centered=true, fullscreen=true})
+local function load_audio()
+  AUDIO.click = love.audio.newSource('audio/click.wav', 'static')
+  AUDIO.trombone = love.audio.newSource('audio/cartoon-trombone-sound-effect-241387.mp3', 'static')
+
+  AUDIO.shoot_plasma = love.audio.newSource('audio/sci-fi-weapon-shoot-firing-plasma-pp-05-233829.mp3', 'static')
+  AUDIO.underwater_explosion = love.audio.newSource('audio/large-underwater-explosion-190270.mp3', 'static')
+
+  AUDIO.motivational = love.audio.newSource('audio/701089__universfield__motivational-day.mp3', 'stream')
+  AUDIO.motivational:setLooping(true)
+  AUDIO.motivational:setVolume(0.10)
+
+  AUDIO.elevator = love.audio.newSource('audio/467240__jay_you__music-elevator-ext.wav', 'stream')
+  AUDIO.elevator:setLooping(true)
+  AUDIO.elevator:setVolume(0.25)
+
+  AUDIO.crime = love.audio.newSource('audio/750627__nancy_sinclair__tense-crime-atmosphere-for-films-and-media.mp3', 'stream')
+  AUDIO.crime:setLooping(true)
+  AUDIO.crime:setVolume(0.50)
+
+  AUDIO.hope = love.audio.newSource('audio/726343__denkyschuk__future-of-hope-bpm-85-loop.wav', 'stream')
+  AUDIO.hope:setLooping(true)
+  AUDIO.hope:setVolume(0.25)
+
+  AUDIO.celestial = love.audio.newSource('audio/759643__nancy_sinclair__celestial-voices.mp3', 'stream')
+  AUDIO.celestial:setLooping(true)
+  AUDIO.celestial:setVolume(0.25)
+end
+
+--------------------------------------------------------------------------------
 function love.load()
   collectgarbage('setpause',200)
   love.keyboard.setKeyRepeat(false)
@@ -59,17 +83,12 @@ function love.load()
   FONTS.torek_42 = love.graphics.newFont('font/ToreksRegular.otf',42,'light')
   FONTS.malefissent_20 = love.graphics.newFont('font/PentaGrams Malefissent.ttf',20,'light')
 
-  AUDIO.click = love.audio.newSource('audio/click.wav', 'static')
-  AUDIO.trombone = love.audio.newSource('audio/cartoon-trombone-sound-effect-241387.mp3', 'static')
-  AUDIO.motivational = love.audio.newSource('audio/701089__universfield__motivational-day.mp3', 'stream')
-  AUDIO.motivational:setLooping(true)
-  AUDIO.motivational:setVolume(0.25)
-
+  load_audio()
   load_images()
 
   EVENT_MANAGER = EventManager()
 
-  SCENE_MANAGER = SceneManager({scene_start, scene_play, scene_win, scene_lose, scene_confirm})
+  SCENE_MANAGER = SceneManager({scene_start, scene_play, scene_win, scene_lose, scene_confirm, scene_credits})
   SCENE_MANAGER:load()
   SCENE_MANAGER:set('start')
 end
@@ -101,6 +120,9 @@ end
 
 --------------------------------------------------------------------------------
 function love.keypressed(key,scancode,isrepeat)
+  if key=='f12' then
+    DEBUG_ENABLED = not DEBUG_ENABLED
+  end
   SCENE_MANAGER:keypressed(key,scancode,isrepeat)
 end
 

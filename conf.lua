@@ -1,7 +1,7 @@
 
 function love.conf(t)
   t.gammacorrect = true
-  t.identity = "gss-gigantic"
+  t.identity = "usss-ohio"
   t.modules.audio = true 
   t.modules.font = true 
   t.modules.joystick = false 
@@ -17,7 +17,7 @@ function love.conf(t)
   t.window.height = 912
   t.window.icon = "art/icon.png"
   t.window.resizable = false
-  t.window.title = "GSS Gigantic"
+  t.window.title = "USSS Ohio"
   t.window.vsync = 1
   t.window.width = 1080
   t.window.x = 100

@@ -233,14 +233,14 @@ function Ship:initialize()
     radiation=Level('radiation',1.0, 0,1e6, 0),
     food=Level('food',100.0, 0,1000, 0),
     slurry=Level('slurry',200.0, 0,1000, 0),
-    temp=Level('temp',98.0, 0,1000, 0),
+    temperature=Level('temperature',80.0, 0,1000, 0),
     waste=Level('waste',10.0, 0,1000, 0),
 
-    sensor_data=Level('sensor_data',10.0, 0,1000, 0),
-    navigation_data=Level('navigation_data',10.0, 0,1000, 0),
+    sensor_data=Level('sensor_data',0.0, 0,1000, 0),
+    navigation_data=Level('navigation_data',0.0, 0,1000, 0),
 
-    shield_power=Level('shield_power',100.0, 0,1000, 0),
-    weapons_power=Level('weapons_power',100.0, 0,1000, 0),
+    shield_power=Level('shield_power',0.0, 0,1000, 0),
+    weapons_power=Level('weapons_power',0.0, 0,1000, 0),
     propulsion_power=Level('propulsion_power',0.0, 0,1000, 0),
 
     defence_command=Level('defence_command',0.0, 0,1000, 0),
@@ -260,7 +260,7 @@ end
 function Ship:setup_crew()
   local c = {}
   -- TODO: only 1 crew and the rest in cryopods...
-  for i,n in ipairs({'pat','chris','terry','dana','francis','jean','jo','jordan','cameron','casey','kelly','ollie'}) do
+  for i,n in ipairs({'Pat','Chris','Terry','Dana','Francis','Jean','Jo','Jordan','Cameron','Casey','Kelly','Ollie'}) do
     c[#c+1] = Crew(n,self)
   end
   self.the_crew = c
@@ -338,15 +338,45 @@ end
 
 
 function Ship:update(dt)
+  -- pre-device crew
+  local n = #self.the_crew
+  for i=1,n do
+    local c = self.the_crew[i]
+    c:update_pre(dt)
+    if c.level.health <= 0 then
+      self.the_crew[i] = nil
+      c:die()
+    end
+  end
+  compact(self.the_crew, n)
+
+  -- devices
   for _,d in ipairs(self.devices) do
     d:update(dt)
   end
+
+  -- ship values
   for _,l in pairs(self.level) do
     l:update(dt)
   end
+
+  -- post-device crew
+  local n = #self.the_crew
+  for i=1,n do
+    local c = self.the_crew[i]
+    c:update_post(dt)
+    if c.level.health <= 0 then
+      self.the_crew[i] = nil
+      c:die()
+    end
+  end
+  compact(self.the_crew, n)
 end
 
 function Ship:slow_update(dt)
+  for _,c in ipairs(self.the_crew) do
+    c:slow_update(dt)
+  end
   for _,d in ipairs(self.devices) do
     d:slow_update(dt)
   end

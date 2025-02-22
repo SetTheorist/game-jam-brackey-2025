@@ -295,6 +295,8 @@ function WalkAction:execute(dt)
     if t<self.agent.walk_speed*dt/cell_cost then
       table.remove(self.path, #self.path)
     end
+
+    self.agent.level.stress = math.max(0, self.agent.level.stress - dt)
   end
   if #self.path==0 then
     return 'done'
