@@ -15,7 +15,7 @@ local chosen_cell = nil
 local chosen_crew = nil
 local chosen_crew_idx = 0
 local elapsed_time = 0
-local ALLOWED_ELAPSED_TIME = 20*16*2
+local ALLOWED_ELAPSED_TIME = 50*16
 local paused = false
 local MAX_MESSAGES = 100
 local the_messages = {}
@@ -44,6 +44,7 @@ local function handle_event_crew_death(event, crew, why)
   end
   EVENT_MANAGER:emit('score:sub', 10, 'crew_death')
   EVENT_MANAGER:emit('message', string.format("Crew death: %s (%s)", crew.name, why), {1,0.5,0.5})
+  love.audio.stop(AUDIO.trombone)
   love.audio.play(AUDIO.trombone)
 end
 
@@ -75,6 +76,8 @@ local function handle_add_repair_job(event)
     local j = RepairJob(d.priority,{},d)
     the_ship:add_job(j)
     --EVENT_MANAGER:emit('message', string.format("Repair job: %s (efficiency=%i)", j, d.efficiency*100), {0.85,0.85,0.85})
+    AUDIO.wooden:stop()
+    AUDIO.wooden:play()
   end
 end
 
@@ -84,6 +87,8 @@ local function handle_add_operate_job(event)
     local j = OperateJob(d.priority,{},d)
     the_ship:add_job(j)
     --EVENT_MANAGER:emit('message', string.format("Operate job: %s", j), {0.85,0.85,0.85})
+    AUDIO.bleep:stop()
+    AUDIO.bleep:play()
   end
 end
 
@@ -113,9 +118,9 @@ end
 function scene_play:set_difficulty(difficulty_level)
   the_difficulty = difficulty_level
   DIFFICULTY_LEVEL = difficulty_level
-  GLOBAL_DECAY_LEVEL = ({1.0,2.0,5.0})[difficulty_level]
+  GLOBAL_DECAY_LEVEL = ({1.0,1.5,4.0})[difficulty_level]
   AUTO_REPAIR_THRESHOLD = ({0.25,0.01,-1.0})[difficulty_level]
-  CREW_SPEED_SCALE = ({1.50,1.00,0.5})[difficulty_level]
+  CREW_SPEED_SCALE = ({1.50,1.00,0.75})[difficulty_level]
 end
 
 function scene_play:reset(difficulty_level)
@@ -125,7 +130,7 @@ function scene_play:reset(difficulty_level)
   chosen_cell = nil
   chosen_crew = nil
   chosen_crew_idx = 0
-  the_score = {score=100, breakdown={initial=100}}
+  the_score = {score=100+50*(4-difficulty_level), breakdown={initial=100}}
   elapsed_time = 0
   paused = false
   for i=1,MAX_MESSAGES do the_messages[i] = {} end
@@ -168,7 +173,7 @@ function scene_play:apply_ship_damage(dam, who)
     c.level.health = c.level.health - dam*(0.5+love.math.random(64)/128)
     c.last_damage = who
     EVENT_MANAGER:emit('message', string.format("Crew %s injured for %0.01f by %s", c.name, dam, who), {1.0,0.8,0.8})
-    EVENT_MANAGER:emit('score:sub', dam, 'crew injury ('..who..')')
+    EVENT_MANAGER:emit('score:sub', dam/2, 'crew injury ('..who..')')
   end
   local total_dam = dam
   while dam>0 do
@@ -178,7 +183,7 @@ function scene_play:apply_ship_damage(dam, who)
     d.health[x] = d.health[x] - lost
     if lost > 0 then
       EVENT_MANAGER:emit('message', string.format("Damage (%s) to %s by %s of %0.01f", x, d.name, who, lost), {1.0,0.7,0.7})
-      EVENT_MANAGER:emit('score:sub', dam, 'damage from '..who)
+      EVENT_MANAGER:emit('score:sub', dam/4, 'damage from '..who)
     end
     dam = dam - math.max(lost*2,total_dam/5)
   end
@@ -228,6 +233,8 @@ function scene_play:slow_game_tick(dt)
       local j = RepairJob(d.priority,{},d)
       the_ship:add_job(j)
       EVENT_MANAGER:emit('message', string.format("Auto-repair job: %s (health=%i)", j, d.total_health*100), {0.75,0.75,0.75})
+      AUDIO.beeping:stop()
+      AUDIO.beeping:play()
     end
   end
   

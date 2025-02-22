@@ -20,9 +20,9 @@ function Device:initialize(name,description,char,priority,ship,cell,variant,inpu
   self.facing = 0
   self.enabled = true
   self.health = { 
-    electronic = 1.0-love.math.random(64)/64/4 - DIFFICULTY_LEVEL/8,
-    mechanical = 1.0-love.math.random(64)/64/4 - DIFFICULTY_LEVEL/8,
-    quantum = 1.0-love.math.random(64)/64/4 - DIFFICULTY_LEVEL/8}
+    electronic = 1.0-love.math.random(64)/64/4 - (DIFFICULTY_LEVEL-1)/8,
+    mechanical = 1.0-love.math.random(64)/64/4 - (DIFFICULTY_LEVEL-1)/8,
+    quantum = 1.0-love.math.random(64)/64/4 - (DIFFICULTY_LEVEL-1)/8}
   self.total_health = math.min(self.health.electronic,self.health.mechanical,self.health.quantum)
   self.decay = {
     electronic = (decay and decay[1] or 4)/1024,
@@ -165,6 +165,8 @@ function Device:slow_update(dt)
       self.integrity = self.integrity - love.math.random(64)/64/32
       EVENT_MANAGER:emit('score:sub', dt, 'broken['..self.name..']')
       EVENT_MANAGER:emit('message', string.format("Breakdown of %s (%i,%i)", self.name, self.cell.x, self.cell.y), {1,0.7,0.5})
+      AUDIO.breaking:stop()
+      AUDIO.breaking:play()
     end
   else
     self.enabled = true
@@ -196,9 +198,6 @@ ReactorCore = class("ReactorCore", Device)
 function ReactorCore:initialize(ship,cell,variant)
   self.class.super.initialize(self,"Reactor Core","Generates energy",'R',0,ship,cell,variant,{},{energy=250,radiation=1/8},{1,4,8})
   self.active_animations[1] = ANIMATIONS.reactor[variant]:clone({x=12,y=12})
-  self.health.electronic = 0.25
-  self.health.mechanical = 0.75
-  self.health.quantum = 0.75
 end
 ----------
 O2Reprocessor = class("O2Reprocessor", Device)

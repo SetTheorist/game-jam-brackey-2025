@@ -5,7 +5,7 @@ local scene_credits = Scene('credits')
 local MUSIC = nil
 
 function scene_credits:load()
-  MUSIC = AUDIO.crime
+  MUSIC = AUDIO.cyberpunk
 end
 
 ----------------------------------------
@@ -60,11 +60,19 @@ function scene_credits:draw(isactive)
   y = 480
   love.graphics.print("Music", FONTS.torek_16, 48,y); y=y+24
   love.graphics.print("Some effects made by Apollo using jsfxr: https://sfxr.me/", 96,y); y=y+16
+
   love.graphics.print("Celestial Voices by Nancy_Sinclair -- https://freesound.org/s/759643/ -- License: Creative Commons 0", 96,y); y=y+16
   love.graphics.print("Future of Hope - bpm 85 loop by DenKyschuk -- https://freesound.org/s/726343/ -- License: Attribution NonCommercial 4.0", 96,y); y=y+16
+  love.graphics.print("infobleep.wav by Divinux -- https://freesound.org/s/198414/ -- License: Creative Commons 0", 96,y); y=y+16
   love.graphics.print("Motivational Day by Universfield -- https://freesound.org/s/701089/ -- License: Attribution 4.0", 96,y); y=y+16
   love.graphics.print("music elevator ext by Jay_You -- https://freesound.org/s/467240/ -- License: Attribution 4.0", 96,y); y=y+16
   love.graphics.print("Tense Crime Atmosphere for Films and Media by Nancy_Sinclair -- https://freesound.org/s/750627/ -- License: Creative Commons 0", 96,y); y=y+16
+  love.graphics.print("Wooden Hover by BenjaminNelan -- https://freesound.org/s/321082/ -- License: Creative Commons 0", 96,y); y=y+16
+
+  love.graphics.print("https://pixabay.com/sound-effects/applause-sound-effect-240470/", 96,y); y=y+16
+  love.graphics.print("https://pixabay.com/sound-effects/beeping-robot-or-machine-102595/", 96,y); y=y+16
+  love.graphics.print("https://pixabay.com/sound-effects/breaking-glass-83809/", 96,y); y=y+16
+  love.graphics.print("https://pixabay.com/sound-effects/cyberpunk-beat-64649/", 96,y); y=y+16
   love.graphics.print("https://pixabay.com/sound-effects/cartoon-trombone-sound-effect-241387/", 96,y); y=y+16
   love.graphics.print("https://pixabay.com/sound-effects/large-underwater-explosion-190270/", 96,y); y=y+16
   love.graphics.print("https://pixabay.com/sound-effects/sci-fi-weapon-shoot-firing-plasma-pp-05-233829/", 96,y); y=y+16

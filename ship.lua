@@ -58,12 +58,12 @@ MAP_DEVICE = {
   " . . . . . . . . . . . . . . . . . . .",
   "n1n2n3n4 . . . . . . . . . . . . .C1C2",
   " . . . . . . . . . . . . . . . . . . .",
-  "b1b1 . . . . . .m1m2m3 . . . . . .O1O2",
-  "b1b1 . . . . . . . . . . . . . . . . .",
-  "b1b1 . . . . . .R1R2R3 . . . . . .T1T2",
-  "b1b1 . . . . . . . . . . . . . . . . .",
-  "b1b1 . . . . . . . . . . . . . . .L1L2",
-  " . . . . . . . . . . . . . . . . . . .",
+  "b1 . . . . . . .m1m2m3 . . . . . .O1O2",
+  "b1 . . . . . . . . . . . . . . . . . .",
+  "b1 . . . . . . .R1R2R3 . . . . . .T1T2",
+  "b1 . . . . . . . . . . . . . . . . . .",
+  "b1 . . . . . . . . . . . . . . . .L1L2",
+  "b1 . . . . . . . . . . . . . . . . . .",
   " . . . . . . . . . . . . . . . . .F1F2",
   "t1t1t1t1 . . . . . . . . . . . . . . .",
   " . . . . . . . . . . . . . . . . . . .",
@@ -231,10 +231,10 @@ function Ship:initialize()
     energy=Level('energy',500.0, 0,1000, 0),
     o2=Level('o2',50.0, 0,100, 0),
     radiation=Level('radiation',1.0, 0,1e6, 0),
-    food=Level('food',100.0, 0,1000, 0),
-    slurry=Level('slurry',200.0, 0,1000, 0),
+    food=Level('food',2000.0, 0,10000, 0),
+    slurry=Level('slurry',1000.0, 0,1000, 0),
     temperature=Level('temperature',80.0, 0,1000, 0),
-    waste=Level('waste',10.0, 0,1000, 0),
+    waste=Level('waste',500.0, 0,1000, 0),
 
     sensor_data=Level('sensor_data',0.0, 0,1000, 0),
     navigation_data=Level('navigation_data',0.0, 0,1000, 0),
@@ -308,7 +308,7 @@ function Ship:locate_device(name,x,y)
   local best_dist = 1e10
   for i,d in ipairs(self.devices_by_name[name]) do
     local c = d.cell
-    local dist = math.abs(c.x-x) + math.abs(c.y-y)
+    local dist = math.abs(c.x-x) + math.abs(c.y-y) + 5*(1 - d.efficiency) -- penalize broken
     if d.owner then dist = dist + 5 end -- prefer unowned
     if dist < best_dist then
       best_device = d

@@ -44,19 +44,20 @@ function scene_start:draw(isactive)
 
   -- TODO: splash-screen etc....
   love.graphics.setColor(1,1,1)
-  love.graphics.print("PLEASANT SPACE CRUISE", FONTS.torek_42, 100, 100)
-  love.graphics.print(VERSION_STRING, FONTS.torek_16, 100, 200)
-  love.graphics.print("Press S to start", FONTS.torek_16, 100, 300)
-  love.graphics.print("Press C for credits", FONTS.torek_16, 100, 500)
-  love.graphics.print("Press Q to quit", FONTS.torek_16, 100, 600)
+  love.graphics.print("A PLEASANT SPACE CRUISE", FONTS.torek_42, 100, 100)
+  love.graphics.print("Aboard The USSS Ohio", FONTS.torek_42, 150, 150)
+  love.graphics.print(VERSION_STRING, FONTS.torek_16, 100, 250)
+  love.graphics.print("Press S to start", FONTS.torek_16, 100, 350)
+  love.graphics.print("Press C for credits", FONTS.torek_16, 100, 550)
+  love.graphics.print("Press Q to quit", FONTS.torek_16, 100, 650)
 
   for i,x in ipairs({"EASY", "NORMAL", "IMPOSSIBLE"}) do
     if i==difficulty_level then
       love.graphics.setColor(1,1,0)
-      love.graphics.print("Selected  "..x.."  difficulty", FONTS.torek_16, 100, 348+24*i)
+      love.graphics.print("Selected  "..x.."  difficulty", FONTS.torek_16, 100, 398+24*i)
     else
       love.graphics.setColor(0.9,0.9,0.9)
-      love.graphics.print("Press  "..tostring(i).."  to select  "..x.."  difficulty", FONTS.torek_16, 100, 348+24*i)
+      love.graphics.print("Press  "..tostring(i).."  to select  "..x.."  difficulty", FONTS.torek_16, 100, 398+24*i)
     end
   end
 
@@ -76,7 +77,7 @@ function scene_start:draw(isactive)
       "    [R]epair / [F]ix",
       "    [O]perate / [W]ork",
       "",
-      "  Note that {propulsion_power} is what you need to progress",
+      "  Note that *propulsion-power* is what you need to progress",
     }) do
     love.graphics.print(t, 550, 200+15*i)
   end
@@ -84,7 +85,7 @@ function scene_start:draw(isactive)
   love.graphics.setColor(unpack(CTHULHU_GREEN))
   love.graphics.print("Dreaming Rlyeh Studio", FONTS.malefissent_20, 24, 912-48)
   love.graphics.setColor(1,0.5,1,1)
-  love.graphics.print("Made with LÖVE "..love.getVersion(), 950, 912-24)
+  love.graphics.print(string.format("Made with LÖVE %i.%i.%i (%s)", love.getVersion()), 770, 912-24)
 end
 
 function scene_start:keypressed(key,scancode,isrepeat)

@@ -93,6 +93,13 @@ function scene_lose:draw(isactive)
   love.graphics.print("to return to main menu", FONTS.torek_42, 200+4, 400+4)
 
   love.graphics.setColor(1,1,1)
+  love.graphics.print(
+      string.format("Progressed %0.01f/%0.01f in %s",
+        game_progress.elapsed_progress, game_progress.current_node.time,
+        game_progress.current_node.name),
+      100, 550)
+
+  love.graphics.setColor(1,1,1)
   love.graphics.print(string.format("Final score: %0.01f", game_score.score), 100, 600)
   for i,x in ipairs(game_score_breakdown) do
     love.graphics.print(string.format("%s: %0.01f", x[1], x[2]), 124+math.floor(i/20)*240, 624+(1+(i%20))*12)

@@ -83,6 +83,7 @@ end
 function scene_win:enter(prev_scene, the_reason, the_score, the_progress, the_difficulty, ...)
   Scene.enter(self, prev_scene, ...)
   if MUSIC then MUSIC:play() end
+  AUDIO.applause:play()
 
   game_score = the_score
   game_progress = the_progress
