@@ -92,6 +92,9 @@ function draw_progress_panel(the_progress)
   local y = cn.start_position[2] + ep*cn.dir[2]
   love.graphics.circle('fill', x*24-12, y*24-12, 5)
 
+  love.graphics.printf(string.format("%0.01f/%0.01f", the_progress.elapsed_progress, the_progress.current_node.time),
+    x*24-12-50,y*24-12+16, 100, 'center')
+
   love.graphics.printf(cn.name,        FONTS.torek_16, 144,  2.5, 216, 'center')
   love.graphics.printf(cn.description,                 144, 24,   216, 'center')
 end
@@ -140,16 +143,18 @@ function draw_ship_stats_panel(ship)
   love.graphics.print(string.format("temp:%3i", ship.level.temp.value), 1.5,73.5)
   love.graphics.print(string.format("waste:%3i", ship.level.waste.value), 1.5,85.5)
 
-  love.graphics.print(string.format("sensor_data:%3i", ship.level.sensor_data.value), 1.5,97.5)
-  love.graphics.print(string.format("navigation_data:%3i", ship.level.navigation_data.value), 1.5,109.5)
+  love.graphics.print(string.format("sensor_data:%3i", ship.level.sensor_data.value), 1.5,107.5)
+  love.graphics.print(string.format("navigation_data:%3i", ship.level.navigation_data.value), 1.5,119.5)
 
-  love.graphics.print(string.format("propulsion_power:%3i", ship.level.propulsion_power.value), 1.5,121.5)
-  love.graphics.print(string.format("shield_power:%3i", ship.level.shield_power.value), 1.5,133.5)
-  love.graphics.print(string.format("weapons_power:%3i", ship.level.weapons_power.value), 1.5,145.5)
+  love.graphics.print(string.format("propulsion_power:%3i", ship.level.propulsion_power.value), 1.5,141.5)
+  love.graphics.print(string.format("shield_power:%3i", ship.level.shield_power.value), 1.5,153.5)
+  love.graphics.print(string.format("weapons_power:%3i", ship.level.weapons_power.value), 1.5,165.5)
 
-  love.graphics.print(string.format("defence_command:%3i", ship.level.defence_command.value), 1.5,157.5)
-  love.graphics.print(string.format("flight_command:%3i", ship.level.flight_command.value), 1.5,169.5)
-  love.graphics.print(string.format("ftl_command:%3i", ship.level.ftl_command.value), 1.5,181.5)
+  love.graphics.print(string.format("defence_command:%3i", ship.level.defence_command.value), 1.5,187.5)
+  love.graphics.print(string.format("flight_command:%3i", ship.level.flight_command.value), 1.5,199.5)
+  love.graphics.print(string.format("ftl_command:%3i", ship.level.ftl_command.value), 1.5,211.5)
+
+  love.graphics.print(string.format("progress_power:%3i", ship.level.progress_power.value), 1.5,235.5)
 end
 
 ----------------------------------------
@@ -216,6 +221,8 @@ function draw_cell_panel(cell)
     (d.health.mechanical*100), (d.decay.mechanical*100)), 13.5, 49.5)
   love.graphics.print(string.format("Quantum:%3i (-%.04f%%)",
     (d.health.quantum*100), (d.decay.quantum*100)), 13.5, 61.5)
+  love.graphics.print(string.format("[Integrity:%3i]",
+    (d.integrity*100)), 13.5, 73.5)
 
   if d.activation_elapsed>0 then
     love.graphics.print(string.format("Accrued:%0.01f/%0.01f",

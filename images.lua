@@ -2,6 +2,7 @@
 IMAGES = {}
 ANIMATIONS = {}
 TILES = {}
+PARTICLES = {}
 
 ----------------------------------------
 local function make_background(w,h,z)
@@ -53,6 +54,9 @@ function load_images()
     operate = Anim(1,IMAGES.crew,4,1, 24,24, 0,48, 0),
     repair  = Anim(1,IMAGES.crew,4,1, 24,24, 0,48, 0),
   }
+
+  IMAGES.diamond = love.graphics.newImage('art/particle_diamond.png')
+  PARTICLES.diamond = IMAGES.diamond
 
   IMAGES.decoration_1 = love.graphics.newImage('art/decoration_1-tile.png')
   TILES.decoration_1 = IMAGES.decoration_1
@@ -147,8 +151,8 @@ function load_images()
     Anim(7,IMAGES.propulsion_system,1,5,24,24,24,0,0),
     Anim(7,IMAGES.propulsion_system,1,5,24,24,48,0,0)}
 
-  IMAGES.defense_console = love.graphics.newImage('art/defense_console-anim-4.png')
-  ANIMATIONS.defense_console = Anim(3,IMAGES.defense_console,1,4,24,24, 0,0,0)
+  IMAGES.defence_console = love.graphics.newImage('art/defence_console-anim-4.png')
+  ANIMATIONS.defence_console = Anim(3,IMAGES.defence_console,1,4,24,24, 0,0,0)
   IMAGES.flight_console = love.graphics.newImage('art/flight_console-anim-4.png')
   ANIMATIONS.flight_console = Anim(3,IMAGES.flight_console,1,4,24,24, 0,0,0)
   IMAGES.ftl_console = love.graphics.newImage('art/ftl_console-anim-4.png')

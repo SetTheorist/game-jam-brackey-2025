@@ -15,7 +15,7 @@ local chosen_cell = nil
 local chosen_crew = nil
 local chosen_crew_idx = 0
 local elapsed_time = 0
-local ALLOWED_ELAPSED_TIME = 200
+local ALLOWED_ELAPSED_TIME = 23*16*2
 local paused = false
 local MAX_MESSAGES = 100
 local the_messages = {}
@@ -136,11 +136,59 @@ function scene_play:pause(prev_scene,...)
 end
 
 --------------------------------------------------------------------------------
-local function slow_game_tick(dt)
+function scene_play:apply_ship_damage(dam, who)
+  if dam>0 then
+    local c = the_ship.the_crew[love.math.random(#the_ship.the_crew)]
+    c.level.health = c.level.health - dam
+    EVENT_MANAGER:emit('message', string.format("Crew %s injured for %0.01f by %s", c.name, dam, who), {1.0,0.8,0.8})
+  end
+  while dam>0 do
+    local d = the_ship.devices[love.math.random(#the_ship.devices)]
+    local x = ({'electronic','mechanical','quantum'})[love.math.random(3)]
+    local lost = d.health[x]
+    d.health[x] = 0
+    EVENT_MANAGER:emit('message', string.format("Damage to %s by %s of %0.01f", d.name, x, lost), {1.0,0.7,0.7})
+    dam = dam - lost
+  end
+end
+
+function scene_play:asteroid_storm(p, dt)
+  if love.math.random() < p*dt then
+    local impact = 5+5*love.math.random(64)/64
+    local absorbed = the_ship.level.shield_power:sub(impact)
+    local damaging = impact - absorbed
+    EVENT_MANAGER:emit('message',
+      string.format("Asteroid damage %0.01f; %0.01f absorbed by shields", impact, absorbed),
+      {1,0.6,0.6})
+    self:apply_ship_damage(damaging, 'asteroid')
+  end
+end
+
+function scene_play:pirate_attack(p, dt)
+  if love.math.random() < p*dt then
+    local impact_s = 10+5*love.math.random(64)/64
+    local absorbed_s = the_ship.level.shield_power:sub(impact_s)
+    local impact_w = 10+5*love.math.random(64)/64
+    local absorbed_w = the_ship.level.weapons_power:sub(impact_w)
+    local damaging = (impact_s-absorbed_s) + (impact_w-absorbed_w)
+    EVENT_MANAGER:emit('message',
+      string.format("Pirate attack %0.01f; repelled by %0.01f shields and %0.01f weapons",
+        (impact_s+impact_w), absorbed_s, absorbed_w),
+      {1,0.6,0.7})
+    self:apply_ship_damage(damaging, 'pirates')
+  end
+end
+
+--------------------------------------------------------------------------------
+function scene_play:slow_game_tick(dt)
   for _,c in ipairs(the_ship.the_crew) do
     c:slow_update(dt)
   end
   the_ship:slow_update(dt)
+
+  for e,p in ipairs(the_progress.current_node.events) do
+    self[e](self, p, dt)
+  end
 
   for _,d in ipairs(the_ship.devices) do
     if d.total_health <= AUTO_REPAIR_THRESHOLD and not d.repair_job then
@@ -156,13 +204,13 @@ local function slow_game_tick(dt)
   if #the_ship.the_crew == 0 then
     EVENT_MANAGER:emit('lose-game', 'all crew dead')
   end
-  if #the_ship.the_crew == 0 then
-    EVENT_MANAGER:emit('lose-game', 'all crew dead')
+  if the_score.score < 0 then
+    EVENT_MANAGER:emit('lose-game', 'negative score')
   end
 end
 
 ----------------------------------------
-local function game_tick(dt)
+function scene_play:game_tick(dt)
   local n = #the_ship.the_crew
   for i=1,n do
     local c = the_ship.the_crew[i]
@@ -175,15 +223,15 @@ local function game_tick(dt)
   compact(the_ship.the_crew, n)
   the_ship:update(dt)
 
-  the_progress.elapsed_progress = the_progress.elapsed_progress + dt/10
+  local pp = the_ship.level.progress_power:sub(dt)
+  the_progress.elapsed_progress = the_progress.elapsed_progress + pp/16
   if the_progress.elapsed_progress >= the_progress.current_node.time then
     the_progress.elapsed_progress = 0
     the_progress.current_node = NODES[the_progress.current_node.next]
     if not the_progress.current_node then
       EVENT_MANAGER:emit('score:add', 1000, 'complete-journey')
-      EVENT_MANAGER:emit('win-game')
-    end
-    if the_progress.current_node == FINAL_NODE then
+      EVENT_MANAGER:emit('win-game', 'complete-journey')
+    elseif the_progress.current_node == FINAL_NODE then
       EVENT_MANAGER:emit('message', "Progressed to final stage of travel: "..the_progress.current_node.name, {0.6,1,0.6})
     else
       EVENT_MANAGER:emit('message', "Progressed to next stage of travel: "..the_progress.current_node.name, {0.5,1,0.5})
@@ -201,12 +249,12 @@ function scene_play:update(dt)
 
   if slow_game_dt >= SLOW_GAME_TICK then
     slow_game_dt = slow_game_dt - SLOW_GAME_TICK
-    slow_game_tick(SLOW_GAME_TICK)
+    self:slow_game_tick(SLOW_GAME_TICK)
   end
 
   if game_dt >= GAME_TICK then
     game_dt = game_dt - GAME_TICK
-    game_tick(GAME_TICK)
+    self:game_tick(GAME_TICK)
   else
     collectgarbage('step')
   end
@@ -225,9 +273,9 @@ function scene_play:draw(isactive)
   love.graphics.print(string.format('Score: %-6.1f',the_score.score),552,0)
 
   love.graphics.setColor(1,0.5,1,1)
-  local td = elapsed_time/128
+  local td = elapsed_time/16
   local td_day = math.floor(td)
-  local td_hour = math.floor((td - td_day)*60)
+  local td_hour = math.floor((td - td_day)*16)
   love.graphics.print(string.format('Time: %02i:%02i', td_day, td_hour), 816,0)
 
   love.graphics.push()
@@ -282,6 +330,7 @@ function scene_play:keypressed(key,scancode,isrepeat)
     collectgarbage('collect')
   end
 
+
   if scancode=='.' then
     chosen_crew_idx = 1 + (chosen_crew_idx % #the_ship.the_crew)
   elseif scancode==',' then
@@ -289,31 +338,15 @@ function scene_play:keypressed(key,scancode,isrepeat)
   end
   chosen_crew = the_ship.the_crew[chosen_crew_idx]
 
-  if key=='w' then
+  if key=='x' then
     EVENT_MANAGER:emit('win-game', 'debug')
-  end
-  if key=='l' then
+  elseif key=='z' then
     EVENT_MANAGER:emit('lose-game', 'debug')
   end
 
-  --[[
-  if key=='w' then
-    for k,v in ipairs(the_ship.jobs_list) do
-      EVENT_MANAGER:emit('message', string.format("%s %s", k,v), {1,1,1})
-    end
-  end
-
-  if key=='s' then
-    for k,v in pairs(the_score.breakdown) do
-      EVENT_MANAGER:emit('message', string.format("%s %s", k,v), {1,1,1})
-    end
-  end
-  --]]
-
-  if key=='r' then
+  if key=='r' or key=='f' then
     EVENT_MANAGER:emit('add_repair_job')
-  end
-  if key=='o' then
+  elseif key=='o' or key=='w' then
     EVENT_MANAGER:emit('add_operate_job')
   end
 end

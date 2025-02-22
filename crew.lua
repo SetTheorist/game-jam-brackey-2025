@@ -5,6 +5,7 @@ Crew = class("Crew")
 
 function Crew:initialize(name,ship)
   self.ship = ship
+  --[[
   self.skills = {
     combat_melee  = love.math.random(128)/128,
     combat_ranged = love.math.random(128)/128,
@@ -20,6 +21,7 @@ function Crew:initialize(name,ship)
     repair_quantum    = love.math.random(128)/128,
     zen = love.math.random(128)/128,
     }
+  --]]
 
   self.level = {
     health=100-20*love.math.random(64)/64,
@@ -163,14 +165,14 @@ function Crew:new_action()
 
   if #self.ship.jobs_list > 0 then
     local j = self.ship.jobs_list[1]
-    if j:check_skills(self) then
+    --if j:check_skills(self) then
       table.remove(self.ship.jobs_list,1)
       if not self:claim_job(j) then
         print("ERROR: failure to claim job", self, j)
         -- TODO!
       end
       return
-    end
+    --end
   end
 
   if love.math.random()<0.50 then
@@ -216,9 +218,10 @@ function Crew:update(dt)
   self.level.food = math.max(0, self.level.food - dt/4)
   self.level.rest = math.max(0, self.level.rest - dt/4)
 
-  if love.math.random() < (1.0-self.skills.zen)*dt then
-    self.level.stress = math.min(1000.0, self.level.stress + love.math.random())
-  end
+  --if love.math.random() < (1.0-self.skills.zen)*dt then
+  --  self.level.stress = math.min(1000.0, self.level.stress + love.math.random())
+  --end
+  self.level.stress = math.min(1000.0, self.level.stress + love.math.random()*dt)
   
   if self.level.waste>32 then
     if love.math.random()*32 < self.level.waste-32 then

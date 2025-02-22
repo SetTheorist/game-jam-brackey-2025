@@ -13,7 +13,6 @@ ship = require "ship"
 crew = require "crew"
 display = require "display"
 progress = require "progress"
-state = require "state"
 
 scene_confirm = require "scene_confirm"
 scene_lose = require "scene_lose"
@@ -30,8 +29,8 @@ SCENE_MANAGER = nil
 
 -- TODO: make these adjustable in-game...
 -- (game difficulties: decay factor, crew speed factors)
-GLOBAL_DECAY_FACTOR = 10.0
-AUTO_REPAIR_THRESHOLD = 0.25
+GLOBAL_DECAY_FACTOR = 1.0
+AUTO_REPAIR_THRESHOLD = 0.01
 
 --------------------------------------------------------------------------------
 
@@ -58,6 +57,7 @@ function love.load()
 
   FONTS.torek_16 = love.graphics.newFont('font/ToreksRegular.otf',16,'light')
   FONTS.torek_42 = love.graphics.newFont('font/ToreksRegular.otf',42,'light')
+  FONTS.malefissent_20 = love.graphics.newFont('font/PentaGrams Malefissent.ttf',20,'light')
 
   AUDIO.click = love.audio.newSource('audio/click.wav', 'static')
   AUDIO.trombone = love.audio.newSource('audio/cartoon-trombone-sound-effect-241387.mp3', 'static')

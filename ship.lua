@@ -77,7 +77,7 @@ CODE_TO_DEVICE = {
   B=FlightConsole,
   b=Bed,
   C=Co2Scrubber,
-  D=DefenseConsole,
+  D=DefenceConsole,
   E=SensorSystem,
   F=FoodSynthesizer,
   J=FTLDrive,
@@ -231,7 +231,7 @@ function Ship:initialize()
     energy=Level('energy',500.0, 0,1000, 0),
     o2=Level('o2',50.0, 0,100, 0),
     radiation=Level('radiation',1.0, 0,1e6, 0),
-    food=Level('food',100.0, 0,200, 0),
+    food=Level('food',100.0, 0,1000, 0),
     slurry=Level('slurry',200.0, 0,1000, 0),
     temp=Level('temp',98.0, 0,1000, 0),
     waste=Level('waste',10.0, 0,1000, 0),
@@ -247,9 +247,9 @@ function Ship:initialize()
     flight_command=Level('flight_command',0.0, 0,1000, 0),
     ftl_command=Level('ftl_command',0.0, 0,1000, 0),
 
-    --[[
-    hull_integrity
-    --]]
+    progress_power=Level('progress_power',0.0, 0,100, 0),
+
+    -- hull_integrity
     }
 
   self:setup_map()

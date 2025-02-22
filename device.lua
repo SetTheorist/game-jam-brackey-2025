@@ -10,6 +10,7 @@ function Device:initialize(name,char,priority,ship,cell,variant,inputs,outputs,d
   self.char = char
   self.priority = priority
   self.efficiency = 1.0
+  self.integrity = 1.0
   self.inputs = inputs or {}
   self.outputs = outputs or {}
   self.cell = cell
@@ -17,9 +18,9 @@ function Device:initialize(name,char,priority,ship,cell,variant,inputs,outputs,d
   self.facing = 0
   self.enabled = true
   self.health = { 
-    electronic = 1.0-love.math.random(64)/256,
-    mechanical = 1.0-love.math.random(64)/256,
-    quantum = 1.0-love.math.random(64)/256}
+    electronic = 1.0-love.math.random(64)/64/4,
+    mechanical = 1.0-love.math.random(64)/64/4,
+    quantum = 1.0-love.math.random(64)/64/4}
   self.total_health = 1.0
   self.decay = {
     electronic = (decay and decay[1] or 4)/1024,
@@ -100,11 +101,13 @@ function Device:start_operate(agent)
   end
   self.activation_elapsed = 0.0
 end
+
 function Device:operate(agent,dt)
   if self.owner~=agent then
     print("ERROR: Device:operate() but self.owner~=agent",self,agent)
   end
   -- TODO: skill
+  self:process_inout(dt)
   self.activation_elapsed = self.activation_elapsed + dt
   if self.activation_elapsed >= self.activation_time then
     self:on_completion(agent)
@@ -114,13 +117,28 @@ function Device:operate(agent,dt)
     return 'in-progress'
   end
 end
+
 function Device:stop_operate(agent)
   if self.owner~=agent then
     print("ERROR: Device:stop_operate() but self.owner~=agent",self,agent)
   end
   self.activation_elapsed = 0.0
 end
+
 function Device:on_completion(agent)
+end
+
+function Device:process_inout(dt)
+  local t = 1.0
+  for l,c in pairs(self.inputs) do
+    t = math.min(t, self.ship.level[l].value/math.abs(c*dt))
+  end
+  for l,c in pairs(self.inputs) do
+    self.ship.level[l]:add(-t*c*dt)
+  end
+  for l,c in pairs(self.outputs) do
+    self.ship.level[l]:add(self.efficiency*t*c*dt)
+  end
 end
 
 function Device:__tostring()
@@ -142,12 +160,13 @@ function Device:slow_update(dt)
     self.total_health = 0.0
     self.efficiency = 0.0
     if was_ok then
+      self.integrity = self.integrity - love.math.random(64)/64/32
       EVENT_MANAGER:emit('score:sub', dt, 'broken['..self.name..']')
       EVENT_MANAGER:emit('message', string.format("Breakdown of %s (%i,%i)", self.name, self.cell.x, self.cell.y), {1,0.7,0.5})
     end
   else
     self.enabled = true
-    self.efficiency = math.min(1.0,math.ceil(self.total_health*16)/16)
+    self.efficiency = self.integrity*math.min(1.0,math.ceil(self.total_health*16)/16)
   end
 
   if self.active_animations[1] then
@@ -167,16 +186,7 @@ function Device:update(dt)
   end
   if not self.enabled then return end
   if self.manned or self.activated then return end
-  local t = 1.0
-  for l,c in pairs(self.inputs) do
-    t = math.min(t, self.ship.level[l].value/math.abs(c*dt))
-  end
-  for l,c in pairs(self.inputs) do
-    self.ship.level[l]:add(-t*c*dt)
-  end
-  for l,c in pairs(self.outputs) do
-    self.ship.level[l]:add(self.efficiency*t*c*dt)
-  end
+  self:process_inout(dt)
 end
 
 ----------
@@ -245,9 +255,9 @@ end
 function Toilet:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
   local t = math.min(2*dt,agent.level.waste)
-  -- TODO: use efficiency somehow
   agent.level.waste = agent.level.waste - t
-  agent.level.stress = math.max(0, agent.level.stress - t/2*agent.skills.zen)
+  --agent.level.stress = math.max(0, agent.level.stress - t/2*agent.skills.zen)
+  agent.level.stress = math.max(0, agent.level.stress - t/2*self.efficiency)
   self.ship.level.waste:add(t)
   if agent.level.waste<=0 then res='done' end
   return res
@@ -273,10 +283,11 @@ function NutrientDispenser:initialize(ship,cell,variant)
 end
 function NutrientDispenser:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
-  local t = math.min(dt,self.ship.level.food.value)*self.efficiency
+  local t = math.min(10*dt,self.ship.level.food.value)*self.efficiency
   self.ship.level.food:sub(t)
   agent.level.food = math.min(256, agent.level.food + t)
-  agent.level.stress = math.max(0, agent.level.stress - t*agent.skills.zen)
+  --agent.level.stress = math.max(0, agent.level.stress - t*agent.skills.zen)
+  agent.level.stress = math.max(0, agent.level.stress - t)
   if agent.level.food==256 then res='done' end
   return res
 end
@@ -291,7 +302,7 @@ function MedicalBay:initialize(ship,cell,variant)
 end
 function MedicalBay:operate(agent,dt)
   local res = self.class.super.operate(self,agent,dt)
-  local t = math.min(dt,100-agent.level.health)
+  local t = math.min(5*dt,100-agent.level.health)
   agent.level.health = math.min(100, agent.level.health + t*self.efficiency)
   if agent.level.health>=100 then res='done' end
   return res
@@ -305,55 +316,64 @@ end
 ----------
 ShieldSystem = class("ShieldSystem", Device)
 function ShieldSystem:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Shield System",'S',5,ship,cell,variant,{energy=100},{shield_power=1},{2,4,4},{manned=true})
+  self.class.super.initialize(self,"Shield System",'S',5,ship,cell,variant,
+      {energy=100,defence_command=1},{shield_power=1},{2,4,4},{manned=true})
   self.active_animations[1] = ANIMATIONS.shield_system[variant]:clone({x=12,y=12})
 end
 ----------
 WeaponsSystem = class("WeaponsSystem", Device)
 function WeaponsSystem:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Weapons System",'W',7,ship,cell,variant,{energy=100},{weapons_power=1}, {2,4,4},{manned=true})
+  self.class.super.initialize(self,"Weapons System",'W',7,ship,cell,variant,
+      {energy=100,defence_command=1},{weapons_power=1}, {2,4,4},{manned=true})
   self.active_animations[1] = ANIMATIONS.weapons_system[variant]:clone({x=12,y=12})
 end
 ----------
 SensorSystem = class("SensorSystem", Device)
 function SensorSystem:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Sensor System",'E',6,ship,cell,variant,{energy=100},{sensor_data=1}, {2,4,4},{manned=true})
+  self.class.super.initialize(self,"Sensor System",'E',6,ship,cell,variant,
+    {energy=100},{sensor_data=5}, {2,4,4},{manned=true})
   self.active_animations[1] = ANIMATIONS.sensor_system[variant]:clone({x=12,y=12})
 end
 ----------
 NavigationSystem = class("NavigationSystem", Device)
 function NavigationSystem:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Navigation System",'N',12,ship,cell,variant,{energy=100},{navigation_data=1}, {2,4,4},{manned=true})
+  self.class.super.initialize(self,"Navigation System",'N',12,ship,cell,variant,
+      {energy=100,sensor_data=1},{navigation_data=5}, {2,4,4},{manned=true})
   self.active_animations[1] = ANIMATIONS.navigation_system[variant]:clone({x=12,y=12})
 end
 ----------
 PropulsionSystem = class("PropulsionSystem", Device)
 function PropulsionSystem:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Propulsion System",'P',13,ship,cell,variant,{energy=100},{propulsion_power=1}, {2,4,4})
+  self.class.super.initialize(self,"Propulsion System",'P',13,ship,cell,variant,
+    {energy=100,flight_command=1},{propulsion_power=1}, {2,4,4})
   self.active_animations[1] = ANIMATIONS.propulsion_system[variant]:clone({x=12,y=12})
 end
 ----------
 FTLDrive = class("FTLDrive", Device)
 function FTLDrive:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"FTL Drive",'J',15,ship,cell,variant,{energy=10},{}, {2,4,8},{operated=true})
+  self.class.super.initialize(self,"FTL Drive",'J',15,ship,cell,variant,
+      {energy=10,propulsion_power=1,ftl_command=1},{progress_power=1}, {2,4,8},{operated=true})
   self.active_animations[1] = ANIMATIONS.ftl_drive[variant]:clone({x=12,y=12})
 end
 ----------
 FlightConsole = class("FlightConsole", Device)
 function FlightConsole:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Flight Console",'B',14,ship,cell,variant,{energy=5},{flight_command=1}, {2,4,8},{manned=true})
+  self.class.super.initialize(self,"Flight Console",'B',14,ship,cell,variant,
+      {energy=5,sensor_data=1},{flight_command=10}, {2,4,8},{manned=true})
   self.active_animations[1] = ANIMATIONS.flight_console:clone({x=12,y=12})
 end
 ----------
-DefenseConsole = class("DefenseConsole", Device)
-function DefenseConsole:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"Defense Console",'D',8,ship,cell,variant,{energy=5},{defense_command=1}, {2,4,8},{manned=true})
-  self.active_animations[1] = ANIMATIONS.defense_console:clone({x=12,y=12})
+DefenceConsole = class("DefenceConsole", Device)
+function DefenceConsole:initialize(ship,cell,variant)
+  self.class.super.initialize(self,"Defence Console",'D',8,ship,cell,variant,
+      {energy=5},{defence_command=10}, {2,4,8},{manned=true})
+  self.active_animations[1] = ANIMATIONS.defence_console:clone({x=12,y=12})
 end
 ----------
 FTLConsole = class("FTLConsole", Device)
 function FTLConsole:initialize(ship,cell,variant)
-  self.class.super.initialize(self,"FTL Console",'Z',16,ship,cell,variant,{energy=5},{flt_command=1}, {2,4,8},{manned=true})
+  self.class.super.initialize(self,"FTL Console",'Z',16,ship,cell,variant,
+      {energy=5,navigation_data=1},{ftl_command=10}, {2,4,8},{manned=true})
   self.active_animations[1] = ANIMATIONS.ftl_console:clone({x=12,y=12})
 end
 

@@ -236,7 +236,8 @@ end
 
 function WaitAction:execute(dt)
   self.elapsed = self.elapsed + dt
-  self.agent.level.stress = math.max(0.0, self.agent.level.stress - dt*self.agent.skills.zen)
+  --self.agent.level.stress = math.max(0.0, self.agent.level.stress - dt*self.agent.skills.zen)
+  self.agent.level.stress = math.max(0.0, self.agent.level.stress - dt)
   if self.elapsed >= self.time then
     return 'done'
   else
@@ -335,15 +336,18 @@ function RepairAction:execute(dt)
 
   -- TODO: chance to damage...
   if self.device.health.electronic < 1.0 then
-    local x = self.agent.skills.repair_electronic*love.math.random()
+    --local x = self.agent.skills.repair_electronic*love.math.random()
+    local x = love.math.random(64)/64
     self.device.health.electronic = math.max(0.0, math.min(1.0, self.device.health.electronic + x*dt))
   end
   if self.device.health.mechanical < 1.0 then
-    local x = self.agent.skills.repair_mechanical*love.math.random()
+    --local x = self.agent.skills.repair_mechanical*love.math.random()
+    local x = love.math.random(64)/64
     self.device.health.mechanical = math.max(0.0, math.min(1.0, self.device.health.mechanical + x*dt))
   end
   if self.device.health.quantum < 1.0 then
-    local x = self.agent.skills.repair_quantum*love.math.random()
+    --local x = self.agent.skills.repair_quantum*love.math.random()
+    local x = love.math.random(64)/64
     self.device.health.quantum = math.max(0.0, math.min(1.0, self.device.health.quantum + x*dt))
   end
 
