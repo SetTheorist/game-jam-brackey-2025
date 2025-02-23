@@ -175,21 +175,35 @@ function Crew:new_action()
     self.job_flags[j.class.name] = nil
     if not self:claim_job(j) then
       print("ERROR: failure to claim job", self, j)
-      -- TODO!
     end
     return
   end
 
   if #self.ship.jobs_list > 0 then
-    local j = self.ship.jobs_list[1]
-    --if j:check_skills(self) then
-      table.remove(self.ship.jobs_list,1)
-      if not self:claim_job(j) then
-        print("ERROR: failure to claim job", self, j)
-        -- TODO!
+    local jl = self.ship.jobs_list
+    local n = #jl
+    local min_priority = 1e20
+    local min_i = nil
+    for i=1,n do
+      local j = self.ship.jobs_list[i]
+      local p = j.priority
+      if j.device then
+        p = p + math.sqrt((self.location.x-j.device.cell.x)^2+ math.sqrt(self.location.y-j.device.cell.y)^2)/2
       end
-      return
-    --end
+      if p < min_priority then
+        min_priority = p
+        min_j = j
+      end
+    end
+    local j = table.remove(self.ship.jobs_list,min_i)
+    if not self:claim_job(j) then print("ERROR: failure to claim job", self, j) end
+    --[[
+    local j = self.ship.jobs_list[1]
+    --if j:check_skills(self) then end --TODO: skills
+    table.remove(self.ship.jobs_list,1)
+    if not self:claim_job(j) then print("ERROR: failure to claim job", self, j) end
+    return
+    --]]
   end
 
   if love.math.random(2)==1 then

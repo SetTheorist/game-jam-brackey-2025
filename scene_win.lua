@@ -70,7 +70,7 @@ end
 ----------------------------------------
 function scene_win:resume(next_scene,...)
   Scene.resume(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
 end
 
 ----------------------------------------
@@ -82,7 +82,7 @@ end
 ----------------------------------------
 function scene_win:enter(prev_scene, the_reason, the_score, the_progress, the_difficulty, ...)
   Scene.enter(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
   AUDIO.applause:play()
 
   game_score = the_score
@@ -105,6 +105,17 @@ end
 
 ----------------------------------------
 function scene_win:update(dt)
+  if MUSIC then
+    if MUSIC_ENABLED then
+      if not MUSIC:isPlaying() then
+        MUSIC:play()
+      end
+    else
+      if MUSIC:isPlaying() then
+        MUSIC:stop()
+      end
+    end
+  end
   for _,ps in ipairs(particle_systems) do
     ps:update(dt)
   end
@@ -132,11 +143,11 @@ function scene_win:draw(isactive)
   love.graphics.print("Difficulty level "..({"EASY","NORMAL","IMPOSSIBLE"})[game_difficulty], FONTS.torek_16, 150, 500)
 
   love.graphics.setColor(1,0.25,0.25)
-  love.graphics.print("Press any key", FONTS.torek_42, 200-4, 300-4)
+  love.graphics.print("Press Q key", FONTS.torek_42, 200-4, 300-4)
   love.graphics.setColor(0.25,0.25,1)
-  love.graphics.print("Press any key", FONTS.torek_42, 200  , 300  )
+  love.graphics.print("Press Q key", FONTS.torek_42, 200  , 300  )
   love.graphics.setColor(0.25,1,0.25)
-  love.graphics.print("Press any key", FONTS.torek_42, 200+4, 300+4)
+  love.graphics.print("Press Q key", FONTS.torek_42, 200+4, 300+4)
 
   love.graphics.setColor(1,0.25,0.25)
   love.graphics.print("to return to main menu", FONTS.torek_42, 200-4, 400-4)
@@ -155,7 +166,9 @@ end
 
 ----------------------------------------
 function scene_win:keypressed(key,scancode,isrepeat)
-  SCENE_MANAGER:set('start')
+  if key=='q' then
+    SCENE_MANAGER:set('start')
+  end
 end
 
 ----------------------------------------

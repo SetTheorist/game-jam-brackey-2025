@@ -115,8 +115,10 @@ function draw_crew_panel(crew)
   love.graphics.print(string.format("Waste:%3i",  crew.level.waste),  2.5,59.5)
   love.graphics.print(string.format("Stress:%3i", crew.level.stress), 2.5,71.5)
   love.graphics.print(string.format("O2:%3i",     crew.level.o2),     2.5,83.5)
-  love.graphics.setColor(1,0.5,0.5)
-  love.graphics.print(crew.last_damage, 102.5,23.5)
+  -- TODO: display this once we can "timeout"
+  --love.graphics.setColor(1,0.5,0.5)
+  --love.graphics.print(crew.last_damage, 102.5,23.5)
+  -- TODO: display current effects (hunger, asphyxiation, etc.)
 
   if crew.current_action then
     love.graphics.setColor(0,1,0.5,1)

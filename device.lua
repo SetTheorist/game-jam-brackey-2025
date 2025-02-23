@@ -83,6 +83,8 @@ function Device:draw()
     end
   end
   love.graphics.setColor(1,1,1,1)
+  if self.repair_job then love.graphics.draw(TILES.icon_hammer) end
+  if self.operate_job then love.graphics.draw(TILES.icon_hand) end
 end
 
 function Device:unclaim()

@@ -28,6 +28,7 @@ EVENT_MANAGER = nil
 SCENE_MANAGER = nil
 
 DEBUG_ENABLED = false
+MUSIC_ENABLED = true
 
 --------------------------------------------------------------------------------
 
@@ -48,17 +49,22 @@ end
 --------------------------------------------------------------------------------
 local function load_audio()
   AUDIO.applause = love.audio.newSource('audio/applause-sound-effect-240470.mp3', 'static')
+  AUDIO.applause:setVolume(0.25)
   AUDIO.beeping = love.audio.newSource('audio/beeping-robot-or-machine-102595.mp3', 'static')
   AUDIO.beeping:setVolume(0.50)
   AUDIO.bleep = love.audio.newSource('audio/198414__divinux__infobleep.wav', 'static')
   AUDIO.breaking = love.audio.newSource('audio/breaking-glass-83809.mp3', 'static')
   AUDIO.click = love.audio.newSource('audio/click.wav', 'static')
-  AUDIO.cyberpunk = love.audio.newSource('audio/cyberpunk-beat-64649.mp3', 'static')
+  AUDIO.lasershot = love.audio.newSource('audio/131432__senitiel__lasershot.wav', 'static')
   AUDIO.shoot_plasma = love.audio.newSource('audio/sci-fi-weapon-shoot-firing-plasma-pp-05-233829.mp3', 'static')
   AUDIO.trombone = love.audio.newSource('audio/cartoon-trombone-sound-effect-241387.mp3', 'static')
   AUDIO.underwater_explosion = love.audio.newSource('audio/large-underwater-explosion-190270.mp3', 'static')
   AUDIO.wooden = love.audio.newSource('audio/321082__benjaminnelan__wooden-hover.wav', 'static')
   AUDIO.wooden:setVolume(0.50)
+
+  AUDIO.cyberpunk = love.audio.newSource('audio/cyberpunk-beat-64649.mp3', 'stream')
+  AUDIO.cyberpunk:setLooping(true)
+  AUDIO.cyberpunk:setVolume(0.50)
 
   AUDIO.motivational = love.audio.newSource('audio/701089__universfield__motivational-day.mp3', 'stream')
   AUDIO.motivational:setLooping(true)

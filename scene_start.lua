@@ -4,7 +4,7 @@ local scene_start = Scene('start')
 
 local CTHULHU_GREEN = {112/255,151/255,117/255,1}
 local VERSION_STRING
-local difficulty_level = 1
+local difficulty_level = 2
 local MUSIC = nil
 
 ----------------------------------------
@@ -16,7 +16,7 @@ end
 ----------------------------------------
 function scene_start:enter(prev_scene,...)
   Scene.enter(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
 end
 
 function scene_start:exit(next_scene,...)
@@ -26,7 +26,7 @@ end
 
 function scene_start:resume(prev_scene,...)
   Scene.resume(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
 end
 
 function scene_start:pause(next_scene,...)
@@ -36,6 +36,17 @@ end
 
 ----------------------------------------
 function scene_start:update(dt)
+  if MUSIC then
+    if MUSIC_ENABLED then
+      if not MUSIC:isPlaying() then
+        MUSIC:play()
+      end
+    else
+      if MUSIC:isPlaying() then
+        MUSIC:stop()
+      end
+    end
+  end
 end
 
 ----------------------------------------
@@ -49,6 +60,7 @@ function scene_start:draw(isactive)
   love.graphics.print(VERSION_STRING, FONTS.torek_16, 100, 250)
   love.graphics.print("Press S to start", FONTS.torek_16, 100, 350)
   love.graphics.print("Press C for credits", FONTS.torek_16, 100, 550)
+  love.graphics.print("Press M to enable/disable music", FONTS.torek_16, 100, 575)
   love.graphics.print("Press Q to quit", FONTS.torek_16, 100, 650)
 
   for i,x in ipairs({"EASY", "NORMAL", "IMPOSSIBLE"}) do
@@ -99,6 +111,8 @@ function scene_start:keypressed(key,scancode,isrepeat)
     difficulty_level = 3
   elseif key=='c' then
     SCENE_MANAGER:push('credits')
+  elseif key=='m' then
+    MUSIC_ENABLED = not MUSIC_ENABLED
   elseif key=='s' then
     scene_play:reset(difficulty_level)
     SCENE_MANAGER:set('play')

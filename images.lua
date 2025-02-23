@@ -60,12 +60,19 @@ function load_images()
   IMAGES.star = love.graphics.newImage('art/particle_star.png')
   PARTICLES.star = IMAGES.star
 
+  IMAGES.icon_hammer = love.graphics.newImage('art/icon_hammer.png')
+  TILES.icon_hammer = IMAGES.icon_hammer
+  IMAGES.icon_hand = love.graphics.newImage('art/icon_hand.png')
+  TILES.icon_hand = IMAGES.icon_hand
+
   IMAGES.decoration_1 = love.graphics.newImage('art/decoration_1-tile.png')
   TILES.decoration_1 = IMAGES.decoration_1
   IMAGES.decoration_2 = love.graphics.newImage('art/decoration_2-tile.png')
   TILES.decoration_2 = IMAGES.decoration_2
   IMAGES.decoration_3 = love.graphics.newImage('art/decoration_3-tile.png')
   TILES.decoration_3 = IMAGES.decoration_3
+  IMAGES.decoration_dark = love.graphics.newImage('art/decoration_dark-tile.png')
+  TILES.decoration_dark = IMAGES.decoration_dark
 
   IMAGES.bed = love.graphics.newImage('art/bed-tile.png')
   TILES.bed = IMAGES.bed

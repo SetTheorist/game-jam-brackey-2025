@@ -18,7 +18,7 @@ end
 ----------------------------------------
 function scene_confirm:resume(next_scene,...)
   Scene.resume(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
 end
 
 ----------------------------------------
@@ -30,7 +30,22 @@ end
 ----------------------------------------
 function scene_confirm:enter(prev_scene, the_reason, the_score, the_progress, the_difficulty, ...)
   Scene.enter(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
+end
+
+----------------------------------------
+function scene_confirm:update(dt)
+  if MUSIC then
+    if MUSIC_ENABLED then
+      if not MUSIC:isPlaying() then
+        MUSIC:play()
+      end
+    else
+      if MUSIC:isPlaying() then
+        MUSIC:stop()
+      end
+    end
+  end
 end
 
 ----------------------------------------

@@ -28,7 +28,7 @@ NODES = {
   earth = {
     name="Earth",
     description="Your final destination",
-    events={pirate_attack=1/16}, -- about 1/"day"
+    events={pirate_attack=1/32}, -- about 1/2"days"
     tile='planet_earth',
     next={},
     time=8.5,

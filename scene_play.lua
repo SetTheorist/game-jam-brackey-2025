@@ -148,7 +148,7 @@ end
 -- TODO: music here
 function scene_play:enter(prev_scene,...)
   Scene.enter(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
 end
 
 function scene_play:exit(next_scene,...)
@@ -158,7 +158,7 @@ end
 
 function scene_play:resume(next_scene,...)
   Scene.resume(self, prev_scene, ...)
-  if MUSIC then MUSIC:play() end
+  if MUSIC and MUSIC_ENABLED then MUSIC:play() end
 end
 
 function scene_play:pause(prev_scene,...)
@@ -185,7 +185,17 @@ function scene_play:apply_ship_damage(dam, who)
       EVENT_MANAGER:emit('message', string.format("Damage (%s) to %s by %s of %0.01f", x, d.name, who, lost), {1.0,0.7,0.7})
       EVENT_MANAGER:emit('score:sub', dam/4, 'damage from '..who)
     end
-    dam = dam - math.max(lost*2,total_dam/5)
+    --TODO: need more variety here...
+    --[[
+    if lost > 0.25 then
+      d.cell.decorations[#d.cell.decorations+1] = {TILES.decoration_dark, love.math.random(9)-4,love.math.random(9)-4}
+    end
+    if lost > 0.5 then
+      local c = the_ship.cells[d.cell.neighbors[love.math.random(#d.cell.neighbors)] ]
+      c.decorations[#c.decorations+1] = {TILES.decoration_dark, love.math.random(9)-4,love.math.random(9)-4}
+    end
+    ---]]
+    dam = dam - math.max(lost*2,total_dam/4)
   end
 end
 
@@ -217,6 +227,8 @@ function scene_play:pirate_attack(p, dt)
         (impact_s+impact_w), absorbed_w, absorbed_s),
       {1,0.6,0.7})
     self:apply_ship_damage(damaging, 'pirates')
+    AUDIO.lasershot:stop()
+    AUDIO.lasershot:play()
   end
 end
 
@@ -271,6 +283,14 @@ function scene_play:game_tick(dt)
 end
 
 function scene_play:update(dt)
+  if MUSIC then
+    if MUSIC_ENABLED then
+      MUSIC:play()
+    else
+      MUSIC:stop()
+    end
+  end
+
   if not paused then
     game_dt = game_dt + dt
     slow_game_dt = slow_game_dt + dt

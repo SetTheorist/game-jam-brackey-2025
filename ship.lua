@@ -277,7 +277,7 @@ function Ship:add_job(j)
   self.jobs_list[#self.jobs_list+1] = j
 end
 
-function Ship:path(c0,c1)
+function Ship:path(c0,c1,variance)
   local function edges(e,i)
     local n = self.cells[i].neighbors
     for j=1,4 do e[j]=n[j] end
@@ -294,7 +294,8 @@ function Ship:path(c0,c1)
   local foundit,the_path,result = path.astar(c0.idx,c1.idx,step_cost_fn,edges,estimate,true)
   if foundit then
     for i,pi in ipairs(the_path) do
-      the_path[i] = {self:xy(pi)}
+      local x,y = self:xy(pi)
+      the_path[i] = {x+variance*(love.math.random(65)-32)/128,y+variance*(love.math.random(65)-32)/128}
     end
   end
   return foundit,the_path

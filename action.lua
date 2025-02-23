@@ -265,7 +265,7 @@ end
 
 function WalkAction:start()
   local c0 = self.agent.ship:cell(self.agent.location.x,self.agent.location.y)
-  local foundit,the_path = self.agent.ship:path(c0, self.target_cell)
+  local foundit,the_path = self.agent.ship:path(c0, self.target_cell, math.max(0,math.min(1.0, (self.agent.level.stress-100)/100)))
   self.path = the_path
   self.agent.anim = self.agent.animations.walk
   return true
