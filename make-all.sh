@@ -2,6 +2,8 @@
 
 VERSION="1.0"
 
+/usr/bin/mkdir -p ./distributions/
+
 # universal
 UNIVERSAL="usss-ohio-v${VERSION}--universal.love"
 cd src/
@@ -10,7 +12,7 @@ cd ..
 
 # windows
 WIN_DIR="usss-ohio-v${VERSION}--win32"
-/usr/bin/mkdir ./${WIN_DIR}
+/usr/bin/mkdir -p ./distributions/${WIN_DIR}
 /usr/bin/cat ./love-win32/love.exe ./distributions/${UNIVERSAL} \
   > ./distributions/${WIN_DIR}/usss-ohio-v${VERSION}.exe
 /usr/bin/cp ./love-win32/license.txt ./distributions/${WIN_DIR}
