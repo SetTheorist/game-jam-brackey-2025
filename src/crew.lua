@@ -48,6 +48,8 @@ function Crew:initialize(name,ship)
   self.animations.repair:set_fps_scale(6*self.work_speed)
   self.anim = self.animations.walk
 
+  self.idle = true
+
   self.effects = {}
 
   self.last_damage = ''
@@ -117,16 +119,16 @@ function Crew:slow_update(dt)
   elseif self.level.health < 50 and not self.job_flags.MedJob then
     self.job_stack[#self.job_stack+1] = MedJob(1.0)
     self.job_flags.MedJob = true
-  elseif self.level.waste > 10 and not self.job_flags.WasteJob then
+  elseif self.level.waste > 20 and not self.job_flags.WasteJob then
     self.job_stack[#self.job_stack+1] = WasteJob(1.0)
     self.job_flags.WasteJob = true
-  elseif self.level.rest < 10 and not self.job_flags.SleepJob then
+  elseif self.level.rest < 15 and not self.job_flags.SleepJob then
     self.job_stack[#self.job_stack+1] = SleepJob(1.0)
     self.job_flags.SleepJob = true
-  elseif self.level.stress > 100 then
-    --self.job_stack[#self.job_stack+1] = WaitJob(1.0)
-    --self.job_flags.WaitJob = true
-    --TODO: wait and/or wander and/or insanity :-)
+  --elseif self.level.stress > 100 then
+  --  self.job_stack[#self.job_stack+1] = WaitJob(1.0)
+  --  self.job_flags.WaitJob = true
+  --TODO: wait and/or wander and/or insanity :-)
   end
 end
 
@@ -140,6 +142,7 @@ end
 
 function Crew:new_action()
   self.current_action = nil
+  self.idle = true
 
   -- if overstressed, then may have breakdown
   if self.level.stress > 100 and love.math.random()<(self.level.stress-100)/100 then
@@ -158,6 +161,7 @@ function Crew:new_action()
   end
 
   if #self.action_stack>0 then
+    self.idle = false
     self.current_action = self.action_stack[#self.action_stack]
     self.action_stack[#self.action_stack] = nil
     if not self.current_action:start() then
@@ -170,6 +174,7 @@ function Crew:new_action()
   end
 
   if #self.job_stack > 0 then
+    self.idle = false
     local j = self.job_stack[#self.job_stack]
     self.job_stack[#self.job_stack] = nil
     self.job_flags[j.class.name] = nil
@@ -180,6 +185,7 @@ function Crew:new_action()
   end
 
   if #self.ship.jobs_list > 0 then
+    self.idle = false
     local jl = self.ship.jobs_list
     local n = #jl
     local min_priority = 1e20
@@ -197,6 +203,7 @@ function Crew:new_action()
     end
     local j = table.remove(self.ship.jobs_list,min_i)
     if not self:claim_job(j) then print("ERROR: failure to claim job", self, j) end
+    return
     --[[
     local j = self.ship.jobs_list[1]
     --if j:check_skills(self) then end --TODO: skills
@@ -264,20 +271,26 @@ function Crew:update_post(dt)
     self.level.health = math.max(0.0, self.level.health - dt*(self.ship.level.temperature.value-110)/25)
     self.level.stress = math.min(1000.0, self.level.stress + love.math.random()*dt)
     self.last_damage = 'heat'
-    io.write('('..tostring(self.ship.level.temperature.value)..')')
   end
   
+  if self.level.rest>10 then
+    if love.math.random() < 1 - self.level.rest/10 then
+      self.level.health = math.max(0.0, self.level.health - dt/16)
+      self.level.stress = math.min(1000.0, self.level.stress + dt)
+      self.last_damage = 'sleep'
+    end
+  end
   if self.level.waste>32 then
     if love.math.random()*32 < self.level.waste-32 then
       self.level.health = math.max(0.0, self.level.health - dt)
+      self.last_damage = 'sepsis'
     end
-    self.last_damage = 'sepsis'
   end
   if self.level.food<8 then
     if love.math.random()*32 < (8-self.level.food) then
       self.level.health = math.max(0.0, self.level.health - dt)
+      self.last_damage = 'hunger'
     end
-    self.last_damage = 'hunger'
   end
   if self.level.o2<1 then
     self.level.health = math.max(0.0, self.level.health - dt*8)

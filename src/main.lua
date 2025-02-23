@@ -53,6 +53,7 @@ local function load_audio()
   AUDIO.beeping = love.audio.newSource('audio/beeping-robot-or-machine-102595.mp3', 'static')
   AUDIO.beeping:setVolume(0.50)
   AUDIO.bleep = love.audio.newSource('audio/198414__divinux__infobleep.wav', 'static')
+  AUDIO.bleep:setVolume(0.25)
   AUDIO.breaking = love.audio.newSource('audio/breaking-glass-83809.mp3', 'static')
   AUDIO.click = love.audio.newSource('audio/click.wav', 'static')
   AUDIO.lasershot = love.audio.newSource('audio/131432__senitiel__lasershot.wav', 'static')
@@ -133,8 +134,13 @@ end
 
 --------------------------------------------------------------------------------
 function love.keypressed(key,scancode,isrepeat)
+  if key=='f1' then
+    MUSIC_ENABLED = not MUSIC_ENABLED
+    return
+  end
   if key=='f12' then
     DEBUG_ENABLED = not DEBUG_ENABLED
+    return
   end
   SCENE_MANAGER:keypressed(key,scancode,isrepeat)
 end

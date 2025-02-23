@@ -227,20 +227,20 @@ function Ship:initialize()
   self.jobs_list = {}
 
   self.level = {
-    co2=Level('co2',50.0, 0,1000, 0),
-    energy=Level('energy',500.0, 0,1000, 0),
-    o2=Level('o2',50.0, 0,100, 0),
+    co2=Level('co2',100.0*(DIFFICULTY_LEVEL-1), 0,1000, 0),
+    energy=Level('energy',200+100.0*(3-DIFFICULTY_LEVEL), 0,1000, 0),
+    o2=Level('o2',100-20*DIFFICULTY_LEVEL, 0,100, 0),
     radiation=Level('radiation',1.0, 0,1e6, 0),
-    food=Level('food',2000.0, 0,10000, 0),
-    slurry=Level('slurry',1000.0, 0,1000, 0),
-    temperature=Level('temperature',80.0, 0,1000, 0),
-    waste=Level('waste',500.0, 0,1000, 0),
+    food=Level('food',2000 - 500*DIFFICULTY_LEVEL, 0,10000, 0),
+    slurry=Level('slurry',1000.0-200*DIFFICULTY_LEVEL, 0,1000, 0),
+    temperature=Level('temperature',80.0-20*DIFFICULTY_LEVEL, 0,1000, 0),
+    waste=Level('waste',500.0+500.0*DIFFICULTY_LEVEL, 0,1000, 0),
 
     sensor_data=Level('sensor_data',0.0, 0,1000, 0),
     navigation_data=Level('navigation_data',0.0, 0,1000, 0),
 
-    shield_power=Level('shield_power',0.0, 0,1000, 0),
-    weapons_power=Level('weapons_power',0.0, 0,1000, 0),
+    shield_power=Level('shield_power',5*(3-DIFFICULTY_LEVEL), 0,1000, 0),
+    weapons_power=Level('weapons_power',5*(3-DIFFICULTY_LEVEL), 0,1000, 0),
     propulsion_power=Level('propulsion_power',0.0, 0,1000, 0),
 
     defence_command=Level('defence_command',0.0, 0,1000, 0),
@@ -255,6 +255,7 @@ function Ship:initialize()
   self:setup_map()
   self.the_crew = nil
   self:setup_crew()
+  self.n_idle = #self.the_crew
 end
 
 function Ship:setup_crew()
@@ -384,6 +385,14 @@ function Ship:slow_update(dt)
   for _,l in pairs(self.level) do
     l:slow_update(dt)
   end
+
+  local ni = 0
+  for _,c in ipairs(self.the_crew) do
+    if c.idle then
+      ni = ni + 1
+    end
+  end
+  self.n_idle = ni
 end
 
 function Ship:draw_map()

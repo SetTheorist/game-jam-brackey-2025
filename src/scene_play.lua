@@ -172,7 +172,7 @@ function scene_play:apply_ship_damage(dam, who)
     local c = the_ship.the_crew[love.math.random(#the_ship.the_crew)]
     c.level.health = c.level.health - dam*(0.5+love.math.random(64)/128)
     c.last_damage = who
-    EVENT_MANAGER:emit('message', string.format("Crew %s injured for %0.01f by %s", c.name, dam, who), {1.0,0.8,0.8})
+    EVENT_MANAGER:emit('message', string.format("Crew %s injured for %0.01f by %s", c.name, dam, who), {1.0,1.0,0.0})
     EVENT_MANAGER:emit('score:sub', dam/2, 'crew injury ('..who..')')
   end
   local total_dam = dam
@@ -351,7 +351,7 @@ function scene_play:draw(isactive)
   --
   love.graphics.push()
     love.graphics.translate(552,360)
-    draw_crew_panel(chosen_crew)
+    draw_crew_panel(chosen_crew,the_ship)
   love.graphics.pop()
   --
   love.graphics.push()
@@ -386,7 +386,7 @@ function scene_play:keypressed(key,scancode,isrepeat)
     SCENE_MANAGER:push('confirm')
   end
 
-  if key=='space' then
+  if key=='space' and not isrepeat then
     paused = not paused
     collectgarbage('collect')
   end
@@ -410,6 +410,12 @@ function scene_play:keypressed(key,scancode,isrepeat)
       scene_play:pirate_attack(1,1)
     elseif key=='c' then
       the_progress.elapsed_progress = the_progress.elapsed_progress + 1
+    elseif key=='n' then
+      if chosen_cell and chosen_cell.device then
+        chosen_cell.device.health.electronic = 0
+        chosen_cell.device.health.mechanical = 0
+        chosen_cell.device.health.quantum = 0
+      end
     end
   end
 

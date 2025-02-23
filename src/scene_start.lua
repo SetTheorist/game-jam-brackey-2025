@@ -60,7 +60,7 @@ function scene_start:draw(isactive)
   love.graphics.print(VERSION_STRING, FONTS.torek_16, 100, 250)
   love.graphics.print("Press S to start", FONTS.torek_16, 100, 350)
   love.graphics.print("Press C for credits", FONTS.torek_16, 100, 550)
-  love.graphics.print("Press M to enable/disable music", FONTS.torek_16, 100, 575)
+  love.graphics.print("Press M to enable/disable music (or F1 at anytime)", FONTS.torek_16, 100, 575)
   love.graphics.print("Press Q to quit", FONTS.torek_16, 100, 650)
 
   for i,x in ipairs({"EASY", "NORMAL", "IMPOSSIBLE"}) do

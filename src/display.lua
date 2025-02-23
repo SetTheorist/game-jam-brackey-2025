@@ -100,8 +100,11 @@ function draw_progress_panel(the_progress)
 end
 
 ----------------------------------------
-function draw_crew_panel(crew)
+function draw_crew_panel(crew,the_ship)
   draw_border(239,287)
+
+  love.graphics.setColor(1,0.5,1,1)
+  love.graphics.print(string.format("%2i idle / %2i crew", the_ship.n_idle, #the_ship.the_crew), 2.5, 272)
 
   if not crew then return end
 
@@ -109,12 +112,27 @@ function draw_crew_panel(crew)
   love.graphics.print(crew.name,2.5,1.5)
 
   love.graphics.setColor(1,1,1,1)
+  if crew.level.health<90 then love.graphics.setColor(1,0.8,0.8) else love.graphics.setColor(1,1,1) end
   love.graphics.print(string.format("Health:%3i", crew.level.health), 2.5,23.5)
+  if crew.level.food<8 then love.graphics.setColor(1,0.8,0.8) else love.graphics.setColor(1,1,1) end
   love.graphics.print(string.format("Food:%3i",   crew.level.food),   2.5,35.5)
+  if crew.level.rest<10 then love.graphics.setColor(1,0.8,0.8) else love.graphics.setColor(1,1,1) end
   love.graphics.print(string.format("Rest:%3i",   crew.level.rest),   2.5,47.5)
+  if crew.level.waste>32 then love.graphics.setColor(1,0.8,0.8) else love.graphics.setColor(1,1,1) end
   love.graphics.print(string.format("Waste:%3i",  crew.level.waste),  2.5,59.5)
-  love.graphics.print(string.format("Stress:%3i", crew.level.stress), 2.5,71.5)
+  if crew.level.o2<10 then love.graphics.setColor(1,0.8,0.8) else love.graphics.setColor(1,1,1) end
   love.graphics.print(string.format("O2:%3i",     crew.level.o2),     2.5,83.5)
+  if crew.level.stress>100 then love.graphics.setColor(1,0.8,0.8) else love.graphics.setColor(1,1,1) end
+  love.graphics.print(string.format("Stress:%3i", crew.level.stress), 2.5,71.5)
+  if the_ship.level.temperature.value>110 then
+    love.graphics.setColor(1,0,0)
+    love.graphics.print("HOT", 200.5,23.5)
+  elseif the_ship.level.temperature.value<50 then
+    love.graphics.setColor(0,0,1)
+    love.graphics.print("COLD", 200.5,23.5)
+  end
+
+
   -- TODO: display this once we can "timeout"
   --love.graphics.setColor(1,0.5,0.5)
   --love.graphics.print(crew.last_damage, 102.5,23.5)
